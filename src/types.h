@@ -120,16 +120,13 @@ typedef int (*ecs_parse_action_t)(
     const char *source,
     void *ctx);
 
-/** Type that describes a single column in the system signature */
-typedef struct ecs_system_column_t {
-    ecs_system_expr_elem_kind_t kind;       /* Element kind (Entity, Component) */
-    ecs_system_expr_oper_kind_t oper_kind;  /* Operator kind (AND, OR, NOT) */
-    union {
-        ecs_type_t type;             /* Used for OR operator */
-        ecs_entity_t component;      /* Used for AND operator */
-    } is;
-    ecs_entity_t source;             /* Source entity (used with FromEntity) */
-} ecs_system_column_t;
+/** Callbacks for component lifecycle events */
+typedef struct ecs_lifecycle_t {
+    ecs_component_init_t init;
+    ecs_component_deinit_t deinit;
+    ecs_component_replace_t replace;
+    ecs_component_merge_t merge;
+} ecs_lifecycle_t;
 
 /** A table column describes a single column in a table (archetype) */
 typedef struct ecs_table_column_t {
@@ -151,6 +148,17 @@ typedef struct ecs_table_t {
     ecs_type_t type;                  /* Identifies table type in type_index */
     uint32_t flags;                   /* Flags for testing table properties */
  } ecs_table_t;
+
+/** Type that describes a single column in the system signature */
+typedef struct ecs_system_column_t {
+    ecs_system_expr_elem_kind_t kind;       /* Element kind (Entity, Component) */
+    ecs_system_expr_oper_kind_t oper_kind;  /* Operator kind (AND, OR, NOT) */
+    union {
+        ecs_type_t type;             /* Used for OR operator */
+        ecs_entity_t component;      /* Used for AND operator */
+    } is;
+    ecs_entity_t source;             /* Source entity (used with FromEntity) */
+} ecs_system_column_t;
 
 /** Type containing data for a table matched with a system */
 typedef struct ecs_matched_table_t {
@@ -253,6 +261,12 @@ typedef struct ecs_row_t {
     ecs_type_t type;              /* Identifies a type (and table) in world */
     int32_t index;                /* Index of the entity in its table */
 } ecs_row_t;
+
+/** Simple type to represent an entity array on stack */
+typedef struct ecs_entity_array_t {
+    ecs_entity_t *array;
+    int32_t count;
+} ecs_entity_array_t;
 
 #define ECS_TYPE_DB_MAX_CHILD_NODES (256)
 #define ECS_TYPE_DB_BUCKET_COUNT (256)
@@ -363,6 +377,9 @@ struct ecs_world {
     uint32_t magic;               /* Magic number to verify world pointer */
     float delta_time;             /* Time passed to or computed by ecs_progress */
     void *context;                /* Application context */
+
+    /* -- Component lifecycle callbacks */
+    ecs_vector_t *lifecycle_callbacks;
 
     /* -- Column systems -- */
 

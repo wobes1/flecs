@@ -247,6 +247,7 @@ void SystemOnAdd_clone_match_2_of_3(void);
 void SystemOnAdd_add_again_1(void);
 void SystemOnAdd_set_again_1(void);
 void SystemOnAdd_add_again_2(void);
+void SystemOnAdd_add_again_1_of_2(void);
 void SystemOnAdd_override_after_add_in_on_add(void);
 void SystemOnAdd_set_after_add_in_on_add(void);
 void SystemOnAdd_add_again_in_progress(void);
@@ -1557,7 +1558,7 @@ static bake_test_suite suites[] = {
     },
     {
         .id = "SystemOnAdd",
-        .testcase_count = 29,
+        .testcase_count = 30,
         .testcases = (bake_test_case[]){
             {
                 .id = "new_match_1_of_1",
@@ -1646,6 +1647,10 @@ static bake_test_suite suites[] = {
             {
                 .id = "add_again_2",
                 .function = SystemOnAdd_add_again_2
+            },
+            {
+                .id = "add_again_1_of_2",
+                .function = SystemOnAdd_add_again_1_of_2
             },
             {
                 .id = "override_after_add_in_on_add",

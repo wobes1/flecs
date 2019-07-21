@@ -569,7 +569,9 @@ ecs_type_t ecs_type_merge_intern(
     ecs_stage_t *stage,
     ecs_type_t arr_cur,
     ecs_type_t to_add,
-    ecs_type_t to_del)
+    ecs_type_t to_del,
+    ecs_entity_array_t *to_add_except,
+    ecs_entity_array_t *to_remove_intersect)
 {
     ecs_assert(world != NULL, ECS_INTERNAL_ERROR, NULL);
 
@@ -577,11 +579,26 @@ ecs_type_t ecs_type_merge_intern(
         if (arr_cur && !to_add) {
             return arr_cur;
         } else if (to_add && !arr_cur) {
+            /* Signal that to_add is completely merged */
+            if (to_add_except) {
+                to_add_except->count = -1;
+            }
+
             return to_add;
         } else if (to_add == arr_cur) {
             return arr_cur;
         }
     } else if (to_del == arr_cur) {
+        /* Signal that to_add is completely merged */
+        if (to_add_except) {
+            to_add_except->count = -1;
+        }
+
+        /* Signal that to_remove is completely merged */
+        if (to_remove_intersect) {
+            to_remove_intersect->count = -1;
+        }
+
         return to_add;
     }
 
@@ -620,6 +637,10 @@ ecs_type_t ecs_type_merge_intern(
         if (add && (!cur || add < cur)) {
             ecs_assert(buf_new != NULL, ECS_INTERNAL_ERROR, NULL);
             buf_new[new_count] = add;
+            if (to_add_except) {
+                to_add_except->array[to_add_except->count] = add;
+                to_add_except->count++;
+            }
             new_count ++;
             i_add ++;
             if (i_add < add_count) {
@@ -630,6 +651,7 @@ ecs_type_t ecs_type_merge_intern(
         } else if (cur && (!add || cur < add)) {
             while (del && del < cur) {
                 i_del ++;
+
                 if (del_count && i_del < del_count) {
                     del = buf_del[i_del];
                 } else {
@@ -642,13 +664,20 @@ ecs_type_t ecs_type_merge_intern(
                 buf_new[new_count] = cur;
                 new_count ++;
             } else if (del == cur) {
+                if (to_remove_intersect) {
+                    to_remove_intersect->array[to_remove_intersect->count] = del;
+                    to_remove_intersect->count++;
+                    ecs_assert(to_remove_intersect->count <= del_count, ECS_INTERNAL_ERROR, NULL);
+                }
+
                 i_del ++;
+
                 if (i_del < del_count) {
                     del = buf_del[i_del];
                 } else {
                     del = 0;
                 }
-            }
+            }           
 
             i_cur ++;
             if (i_cur < cur_count) {
@@ -838,11 +867,11 @@ EcsTypeComponent type_from_vec(
         ecs_type_t resolved_type = ecs_type_from_entity(world, entity);
         assert(resolved_type != 0);
 
-        result.type = ecs_type_merge_intern(
-            world, &world->main_stage, result.type, entity_type, 0);
+        result.type = ecs_type_merge(
+            world, result.type, entity_type, 0);
 
-        result.resolved = ecs_type_merge_intern(
-            world, &world->main_stage, result.resolved, resolved_type, 0);
+        result.resolved = ecs_type_merge(
+            world, result.resolved, resolved_type, 0);
     }
 
     return result;
@@ -906,8 +935,7 @@ ecs_entity_t ecs_new_prefab(
     ecs_assert(world->magic == ECS_WORLD_MAGIC, ECS_INVALID_PARAMETER, NULL);
    
     EcsTypeComponent type = type_from_expr(world, expr);
-    type.resolved = ecs_type_merge_intern(
-        world, NULL, world->t_prefab, type.resolved, 0);
+    type.resolved = ecs_type_merge(world, world->t_prefab, type.resolved, 0);
 
     ecs_entity_t result = ecs_lookup(world, id);
     if (result) {
@@ -967,7 +995,8 @@ ecs_type_t ecs_type_merge(
     ecs_type_t type_remove)
 {
     ecs_stage_t *stage = ecs_get_stage(&world);
-    return ecs_type_merge_intern(world, stage, type, type_add, type_remove);
+    return ecs_type_merge_intern(world, stage, type, type_add, type_remove, 
+                NULL, NULL);
 }
 
 ecs_type_t ecs_type_find(
@@ -1078,5 +1107,6 @@ char* ecs_type_to_expr(
 
     char *result = strdup(ecs_vector_first(chbuf));
     ecs_vector_free(chbuf);
+
     return result;
 }

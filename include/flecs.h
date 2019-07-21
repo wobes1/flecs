@@ -132,6 +132,25 @@ typedef void (*ecs_module_init_action_t)(
     ecs_world_t *world,
     int flags);
 
+/** Component lifecycle actions */
+typedef void (*ecs_component_init_t)(
+    void *data,
+    void *ctx);
+
+typedef void (*ecs_component_deinit_t)(
+    void *data,
+    void *ctx);
+
+typedef void (*ecs_component_replace_t)(
+    void *old,
+    void *_new,
+    void *ctx);
+
+typedef void (*ecs_component_merge_t)(
+    void *src,
+    void *dst,
+    void *ctx);
+
 /** Handles to builtin components */
 #define EEcsComponent (1)
 #define EEcsTypeComponent (2)
@@ -612,6 +631,20 @@ FLECS_EXPORT
 bool ecs_enable_range_check(
     ecs_world_t *world,
     bool enable);
+
+/** Set component lifecycle callbacks.
+ */
+FLECS_EXPORT
+void _ecs_set_lifecycle_callbacks(
+    ecs_world_t *world,
+    ecs_entity_t component,
+    ecs_component_init_t init,
+    ecs_component_deinit_t deinit,
+    ecs_component_replace_t replace,
+    ecs_component_merge_t merge);
+
+#define ecs_set_lifecycle_callbacks(world, component, init, deinit, replace, merge)\
+    _ecs_set_lifecycle_callbacks(world, ecs_entity(component), init, deinit, replace, merge)
 
 /* -- Entity API -- */
 

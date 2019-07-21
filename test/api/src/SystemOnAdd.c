@@ -615,6 +615,32 @@ void SystemOnAdd_add_again_2() {
     ecs_fini(world);
 }
 
+void SystemOnAdd_add_again_1_of_2() {
+    ecs_world_t *world = ecs_init();
+
+    ECS_COMPONENT(world, Position);
+    ECS_COMPONENT(world, Velocity);
+    ECS_COMPONENT(world, Mass);
+
+    ECS_TYPE(world, TypePV, Position, Velocity);
+    ECS_TYPE(world, TypePM, Position, Mass);
+    ECS_SYSTEM(world, Init, EcsOnAdd, Position);
+
+    ecs_entity_t e = ecs_new(world, 0);
+    test_assert(e != 0);
+
+    ecs_add(world, e, TypePV);
+
+    SysTestData ctx = {0};
+    ecs_set_context(world, &ctx);
+
+    ecs_add(world, e, TypePM);
+
+    test_int(ctx.count, 0);
+
+    ecs_fini(world);
+}
+
 void SystemOnAdd_new_w_count_match_1_of_1() {
     ecs_world_t *world = ecs_init();
 
@@ -900,3 +926,5 @@ void SystemOnAdd_2_systems_w_table_creation_in_progress() {
 
     ecs_fini(world);
 }
+
+

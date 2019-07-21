@@ -20,14 +20,14 @@ ecs_entity_t ecs_get_prefab_from_type(
     ecs_stage_t *stage,
     bool is_new_table,
     ecs_entity_t entity,
-    ecs_type_t type_id);
+    ecs_type_t type);
 
 /* Notify row system of entity (identified by row_index) */
 ecs_type_t ecs_notify(
     ecs_world_t *world,
     ecs_stage_t *stage,
     ecs_map_t *systems,
-    ecs_type_t type_id,
+    ecs_type_t type,
     ecs_table_t *table,
     ecs_table_column_t *table_columns,
     int32_t offset,
@@ -60,7 +60,7 @@ void* ecs_get_ptr_intern(
 ecs_entity_t ecs_get_entity_for_component(
     ecs_world_t *world,
     ecs_entity_t entity,
-    ecs_type_t type_id,
+    ecs_type_t type,
     ecs_entity_t component);
 
 
@@ -70,7 +70,7 @@ ecs_entity_t ecs_get_entity_for_component(
 ecs_table_t* ecs_world_get_table(
     ecs_world_t *world,
     ecs_stage_t *stage,
-    ecs_type_t type_id);
+    ecs_type_t type);
 
 /* Notify systems that there is a new table, which triggers matching */
 void ecs_notify_systems_of_table(
@@ -117,15 +117,17 @@ ecs_type_t ecs_type_find_intern(
 ecs_type_t ecs_type_merge_intern(
     ecs_world_t *world,
     ecs_stage_t *stage,
-    ecs_type_t cur_id,
-    ecs_type_t to_add_id,
-    ecs_type_t to_remove_id);
+    ecs_type_t cur,
+    ecs_type_t to_add,
+    ecs_type_t to_remove,
+    ecs_entity_array_t *to_add_except,
+    ecs_entity_array_t *to_remove_intersect);
 
-/* Test if type_id_1 contains type_id_2 */
+/* Test if type_1 contains type_2 */
 ecs_entity_t ecs_type_contains(
     ecs_world_t *world,
-    ecs_type_t type_id_1,
-    ecs_type_t type_id_2,
+    ecs_type_t type_1,
+    ecs_type_t type_2,
     bool match_all,
     bool match_prefab);
 

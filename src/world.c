@@ -18,6 +18,11 @@ const ecs_vector_params_t builder_params = {
     .element_size = sizeof(ecs_builder_op_t)
 };
 
+const ecs_vector_params_t component_lifecycle_params = {
+    .element_size = sizeof(ecs_lifecycle_t)
+};
+
+
 /* -- Global variables -- */
 
 ecs_type_t TEcsComponent;
@@ -92,11 +97,11 @@ void bootstrap_types(
     TEcsHidden = ecs_type_find_intern(world, stage, &(ecs_entity_t){EEcsHidden}, 1);
     TEcsDisabled = ecs_type_find_intern(world, stage, &(ecs_entity_t){EEcsDisabled}, 1);
 
-    world->t_component = ecs_type_merge_intern(world, stage, TEcsComponent, TEcsId, 0);
-    world->t_type = ecs_type_merge_intern(world, stage, TEcsTypeComponent, TEcsId, 0);
-    world->t_prefab = ecs_type_merge_intern(world, stage, TEcsPrefab, TEcsId, 0);
-    world->t_row_system = ecs_type_merge_intern(world, stage, TEcsRowSystem, TEcsId, 0);
-    world->t_col_system = ecs_type_merge_intern(world, stage, TEcsColSystem, TEcsId, 0);
+    world->t_component = ecs_type_merge(world, TEcsComponent, TEcsId, 0);
+    world->t_type = ecs_type_merge(world, TEcsTypeComponent, TEcsId, 0);
+    world->t_prefab = ecs_type_merge(world, TEcsPrefab, TEcsId, 0);
+    world->t_row_system = ecs_type_merge(world, TEcsRowSystem, TEcsId, 0);
+    world->t_col_system = ecs_type_merge(world, TEcsColSystem, TEcsId, 0);
 
     ecs_assert(ecs_vector_count(world->t_component) == 2, ECS_INTERNAL_ERROR, NULL);
     ecs_assert(ecs_vector_count(world->t_type) == 2, ECS_INTERNAL_ERROR, NULL);
@@ -607,6 +612,8 @@ ecs_world_t *ecs_init(void) {
     ecs_assert(world != NULL, ECS_OUT_OF_MEMORY, NULL);
 
     world->magic = ECS_WORLD_MAGIC;
+
+    world->lifecycle_callbacks = ecs_vector_new(&component_lifecycle_params, 256);
 
     world->on_update_systems = ecs_vector_new(&handle_arr_params, 0);
     world->on_validate_systems = ecs_vector_new(&handle_arr_params, 0);
@@ -1497,3 +1504,27 @@ uint32_t ecs_get_target_fps(
 {
     return world->target_fps;
 }
+
+void _ecs_set_lifecycle_callbacks(
+    ecs_world_t *world,
+    ecs_entity_t component,
+    ecs_component_init_t init,
+    ecs_component_deinit_t deinit,
+    ecs_component_replace_t replace,
+    ecs_component_merge_t merge)
+{
+    if (ecs_vector_count(world->lifecycle_callbacks) < component) {
+        ecs_vector_set_size(&world->lifecycle_callbacks, 
+            &component_lifecycle_params, component + 1);
+    }
+
+    ecs_lifecycle_t *callbacks = ecs_vector_first(world->lifecycle_callbacks);
+
+    callbacks[component] = (ecs_lifecycle_t){
+        .init = init,
+        .deinit = deinit,
+        .replace = replace,
+        .merge = merge
+    };
+}
+
