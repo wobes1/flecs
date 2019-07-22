@@ -157,22 +157,17 @@ void* _ecs_chunked_add(
     uint32_t index = 0;
     
     if (!ecs_vector_pop(chunked->free_stack, &free_param, &index)) {
+        uint32_t chunk_size = chunked->chunk_size;
         chunk_t *chunk = last_chunk(chunked);
-        if (!chunk) {
+
+        if (!chunk || chunk->count == chunk_size) {
             add_chunk(chunked);
             chunk = last_chunk(chunked);
         }
 
         ecs_assert(chunk != NULL, ECS_INTERNAL_ERROR, NULL);
-
-        if (chunk->count == chunked->chunk_size) {
-            add_chunk(chunked);
-            chunk = last_chunk(chunked);
-        }
-
         ecs_assert(chunk->count < chunked->chunk_size, ECS_INTERNAL_ERROR, NULL);
 
-        uint32_t chunk_size = chunked->chunk_size;
         uint32_t chunk_count = ecs_vector_count(chunked->chunks);
         uint32_t chunk_elem_count = chunk->count;
 
@@ -180,7 +175,7 @@ void* _ecs_chunked_add(
         chunk->count ++;
     }
 
-    return add_sparse(chunked, index);;
+    return add_sparse(chunked, index);
 }
 
 void* _ecs_chunked_remove(

@@ -87,6 +87,16 @@ void* ecs_vector_add(
     ecs_vector_t **array_inout,
     const ecs_vector_params_t *params)
 {
+    ecs_vector_t *array = *array_inout;
+
+    if (array) {
+        uint32_t count = array->count;
+        if (count < array->size) {
+            array->count ++;
+            return ECS_OFFSET(ARRAY_BUFFER(array), params->element_size * count);
+        }
+    }
+
     return ecs_vector_addn(array_inout, params, 1);
 }
 
