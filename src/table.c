@@ -224,7 +224,7 @@ void ecs_table_delete(
 
         /* Last entity in table is now moved to index of removed entity */
         ecs_row_t row;
-        row.type = table->type;
+        row.table = table;
         row.index = index + 1;
         ecs_map_set(world->main_stage.entity_index, to_move, &row);
 

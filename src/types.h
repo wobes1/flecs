@@ -258,7 +258,7 @@ typedef struct EcsRowSystem {
  * (identified by a type) is stored, at which index. Entries in the 
  * world::entity_index are of type ecs_row_t. */
 typedef struct ecs_row_t {
-    ecs_type_t type;              /* Identifies a type (and table) in world */
+    ecs_table_t *table;            /* The table where the entity is stored */
     int32_t index;                /* Index of the entity in its table */
 } ecs_row_t;
 

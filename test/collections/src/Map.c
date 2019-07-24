@@ -49,14 +49,14 @@ void Map_set_rehash() {
     ecs_map_t *map = ecs_map_new(8, sizeof(char*));
     fill_map(map);
 
-    test_int(ecs_map_bucket_count(map), 10);
+    test_int(ecs_map_bucket_count(map), 16);
 
     int i;
-    for (i = 5; i < 10; i ++) {
+    for (i = 5; i < 16; i ++) {
         ecs_map_set(map, i, &(char*){"zzz"});
     }
 
-    test_int(ecs_map_bucket_count(map), 20);
+    test_int(ecs_map_bucket_count(map), 32);
     test_str(*(char**)ecs_map_get_ptr(map, 1), "hello");
     test_str(*(char**)ecs_map_get_ptr(map, 2), "world");
     test_str(*(char**)ecs_map_get_ptr(map, 3), "foo");
@@ -64,6 +64,19 @@ void Map_set_rehash() {
     test_str(*(char**)ecs_map_get_ptr(map, 5), "zzz");
     test_str(*(char**)ecs_map_get_ptr(map, 6), "zzz");
     test_str(*(char**)ecs_map_get_ptr(map, 7), "zzz");
+
+    for (i = 1; i < 8; i ++) {
+        ecs_map_set(map, i + 1000000, &(char*){"yyy"});
+    }    
+
+    test_int(ecs_map_bucket_count(map), 32);
+    test_str(*(char**)ecs_map_get_ptr(map, 1 + 1000000), "yyy");
+    test_str(*(char**)ecs_map_get_ptr(map, 2 + 1000000), "yyy");
+    test_str(*(char**)ecs_map_get_ptr(map, 3 + 1000000), "yyy");
+    test_str(*(char**)ecs_map_get_ptr(map, 4 + 1000000), "yyy");
+    test_str(*(char**)ecs_map_get_ptr(map, 5 + 1000000), "yyy");
+    test_str(*(char**)ecs_map_get_ptr(map, 6 + 1000000), "yyy");
+    test_str(*(char**)ecs_map_get_ptr(map, 7 + 1000000), "yyy");
 
     ecs_map_free(map);
 }

@@ -155,7 +155,7 @@ void bootstrap_component(
     int32_t index = ecs_table_insert(world, table, table->columns, entity);
 
     /* Create record in entity index */
-    ecs_row_t row = {.type = world->t_component, .index = index};
+    ecs_row_t row = {.table = table, .index = index};
     ecs_map_set(stage->entity_index, entity, &row);
 
     /* Set size and id */
@@ -254,18 +254,16 @@ ecs_table_t* ecs_world_get_table(
     ecs_assert(ecs_vector_count(type) < ECS_MAX_ENTITIES_IN_TYPE, ECS_INTERNAL_ERROR, NULL);
 
     ecs_stage_t *main_stage = &world->main_stage;
-    ecs_table_t* table = get_table(main_stage, type);
-
-    if (!table && world->in_progress) {
-        assert(stage != NULL);
-        table = get_table(stage, type);
+    ecs_table_t* result;
+    if (ecs_map_has(main_stage->table_index, (uintptr_t)type, &result)) {
+        return result;
+    } else {
+        if (ecs_map_has(stage->table_index, (uintptr_t)type, &result)) {
+            return result;
+        }
     }
 
-    if (!table) {
-        table = create_table(world, stage, type);
-    }
-
-    return table;
+    return create_table(world, stage, type);
 }
 
 static

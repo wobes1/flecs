@@ -36,7 +36,7 @@ ecs_entity_t components_contains(
             ecs_assert(row != 0, ECS_INTERNAL_ERROR, NULL);
 
             ecs_entity_t component = ecs_type_contains(
-                world, row->type, type, match_all, true);
+                world, row->table->type, type, match_all, true);
 
             if (component != 0) {
                 if (entity_out) *entity_out = entity;
@@ -58,7 +58,7 @@ ecs_entity_t ecs_get_entity_for_component(
     if (entity) {
         ecs_row_t *row = ecs_map_get_ptr(world->main_stage.entity_index, entity);
         ecs_assert(row != NULL, ECS_INTERNAL_ERROR, NULL);
-        type = row->type;
+        type = row->table->type;
     }
 
     ecs_entity_t *array = ecs_vector_first(type);
