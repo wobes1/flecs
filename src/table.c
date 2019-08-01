@@ -73,12 +73,14 @@ ecs_table_column_t* ecs_table_get_columns(
         return table->columns;
     } else {
         ecs_type_t type = table->type;
-        ecs_table_column_t *columns;
+        ecs_map_t *data_stage = stage->data_stage;
+        ecs_table_column_t *columns = ecs_map_get_ptr(
+            data_stage, ecs_table_column_t*, (uintptr_t)type);
 
-        if (!ecs_map_has(stage->data_stage, (uintptr_t)type, &columns)) {
+        if (!columns) {
             ecs_type_t type = table->type;
             columns = new_columns(world, stage, table, type);
-            ecs_map_set(stage->data_stage, (uintptr_t)type, &columns);
+            ecs_map_set(data_stage, (uintptr_t)type, &columns);
         }
 
         return columns;

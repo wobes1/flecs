@@ -44,7 +44,7 @@ const char* ecs_strerror(
     case ECS_INVALID_HANDLE:
         return "invalid handle";
     case ECS_INVALID_PARAMETER:
-        return "invalid parameters";
+        return "invalid parameter";
     case ECS_INVALID_COMPONENT_ID:
         return "invalid component id";
     case ECS_INVALID_TYPE_EXPRESSION:

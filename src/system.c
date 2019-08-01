@@ -27,8 +27,8 @@ void match_type(
 
         ecs_assert(index != NULL, ECS_INTERNAL_ERROR, NULL);
 
-        ecs_vector_t *systems = NULL;
-        if (!ecs_map_has(index, (uintptr_t)type, &systems)) {
+        ecs_vector_t *systems = ecs_map_get_ptr(index, ecs_vector_t*, (uintptr_t)type);
+        if (!systems) {
             systems = ecs_vector_new(&handle_arr_params, 1);
         }
 

@@ -57,20 +57,6 @@ int compare_handle(
 }
 
 static
-ecs_table_t* get_table(
-    ecs_stage_t *stage,
-    ecs_type_t type)
-{
-    ecs_table_t* result;
-
-    if (ecs_map_has(stage->table_index, (uintptr_t)type, &result)) {
-        return result;
-    } else {
-        return 0;
-    }
-}
-
-static
 void set_table(
     ecs_stage_t *stage,
     ecs_type_t type,
@@ -254,11 +240,15 @@ ecs_table_t* ecs_world_get_table(
     ecs_assert(ecs_vector_count(type) < ECS_MAX_ENTITIES_IN_TYPE, ECS_INTERNAL_ERROR, NULL);
 
     ecs_stage_t *main_stage = &world->main_stage;
-    ecs_table_t* result;
-    if (ecs_map_has(main_stage->table_index, (uintptr_t)type, &result)) {
+
+    ecs_table_t* result = ecs_map_get_ptr(
+        main_stage->table_index, ecs_table_t*, (uintptr_t)type);
+    if (result) {
         return result;
     } else {
-        if (ecs_map_has(stage->table_index, (uintptr_t)type, &result)) {
+        result = ecs_map_get_ptr(
+            stage->table_index, ecs_table_t*, (uintptr_t)type);
+        if (result) {
             return result;
         }
     }
@@ -420,8 +410,8 @@ void row_index_deinit(
 {
     ecs_map_iter_t it = ecs_map_iter(sys_index);
 
-    while (ecs_map_hasnext(&it)) {
-        ecs_vector_t *v = ecs_map_nextptr(&it);
+    ecs_vector_t *v;
+    while ((v = ecs_map_next_ptr(&it, ecs_vector_t*, NULL))) {
         ecs_vector_free(v);
     }
 
@@ -446,11 +436,13 @@ ecs_entity_t get_prefab_parent_flag(
     ecs_world_t *world,
     ecs_entity_t prefab)
 {
-    ecs_entity_t flag;
-    if (!ecs_map_has(world->prefab_parent_index, prefab, &flag)) {
+    ecs_entity_t flag, *flag_ptr;
+    if (!(flag_ptr = ecs_map_get(world->prefab_parent_index, ecs_entity_t, prefab))){
         flag = ecs_new(world, EcsPrefabParent);
         ecs_set(world, flag, EcsPrefabParent, {.parent = prefab});
         ecs_map_set(world->prefab_parent_index, prefab, &flag);
+    } else {
+        flag = *flag_ptr;
     }
 
     return flag;
@@ -630,11 +622,11 @@ ecs_world_t *ecs_init(void) {
     world->tasks = ecs_vector_new(&handle_arr_params, 0);
     world->fini_tasks = ecs_vector_new(&handle_arr_params, 0);
 
-    world->type_sys_add_index = ecs_map_new(0, sizeof(ecs_vector_t*));
-    world->type_sys_remove_index = ecs_map_new(0, sizeof(ecs_vector_t*));
-    world->type_sys_set_index = ecs_map_new(0, sizeof(ecs_vector_t*));
-    world->type_handles = ecs_map_new(0, sizeof(ecs_entity_t));
-    world->prefab_parent_index = ecs_map_new(0, sizeof(ecs_entity_t));
+    world->type_sys_add_index = ecs_map_new(ecs_vector_t*, 0);
+    world->type_sys_remove_index = ecs_map_new(ecs_vector_t*, 0);
+    world->type_sys_set_index = ecs_map_new(ecs_vector_t*, 0);
+    world->type_handles = ecs_map_new(ecs_entity_t, 0);
+    world->prefab_parent_index = ecs_map_new(ecs_entity_t, 0);
 
     world->worker_stages = NULL;
     world->worker_threads = NULL;
@@ -904,9 +896,9 @@ ecs_entity_t ecs_lookup_child(
     if (stage != &world->main_stage) {
         ecs_map_iter_t it = ecs_map_iter(stage->data_stage);
 
-        while (ecs_map_hasnext(&it)) {
-            uint64_t key;
-            ecs_table_column_t *columns = ecs_map_nextptr_w_key(&it, &key);
+        uint64_t key;
+        ecs_table_column_t *columns;
+        while ((columns = ecs_map_next_ptr(&it, ecs_table_column_t*, &key))) {
             ecs_type_t key_type = (ecs_type_t)(uintptr_t)key;
             result = ecs_lookup_child_in_columns(key_type, columns, parent, id);
             if (result) {

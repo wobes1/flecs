@@ -418,8 +418,8 @@ void ecs_get_stats(
     }
 
     ecs_map_iter_t it = ecs_map_iter(world->type_handles);
-    while (ecs_map_hasnext(&it)) {
-        ecs_entity_t h = *(ecs_entity_t*)ecs_map_next_w_key(&it, NULL);
+    ecs_entity_t h;
+    while ((h = ecs_map_next_ptr(&it, ecs_entity_t, NULL))) {
         EcsTypeComponent *data = ecs_get_ptr(world, h, EcsTypeComponent);
         ecs_entity_t *buffer = ecs_vector_first(data->resolved);
         uint32_t i, count = ecs_vector_count(data->resolved);

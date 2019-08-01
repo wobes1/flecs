@@ -52,6 +52,7 @@ void add_chunk(
 
     uint32_t i;
     for (i = 0; i < chunk_size; i ++) {
+        sparse_array[i].dense = 0;
         sparse_array[i].ptr = ECS_OFFSET(chunk->data, i * element_size);
     }
 }
@@ -83,20 +84,59 @@ void* get_sparse(
     uint32_t index,
     bool remove)
 {
+    ecs_assert(index < ecs_vector_count(chunked->sparse), 
+        ECS_INVALID_PARAMETER, NULL);
+
     sparse_elem_t *sparse = ecs_vector_first(chunked->sparse);
     uint32_t dense = sparse[index].dense;
 
     uint32_t *dense_array = ecs_vector_first(chunked->dense);
     uint32_t dense_count = ecs_vector_count(chunked->dense);
 
-    ecs_assert(dense < dense_count, ECS_INVALID_PARAMETER, NULL);
-    ecs_assert(dense_array[dense] == index, ECS_INVALID_PARAMETER, NULL);
+    if (dense >= dense_count) {
+        return NULL;
+    }
+
+    if (dense_array[dense] != index) {
+        return NULL;
+    }
 
     if (remove) {
         int32_t last_sparse_index = dense_array[dense_count - 1];
         dense_array[dense] = last_sparse_index;
         sparse[last_sparse_index].dense = dense;
         ecs_vector_remove_last(chunked->dense);
+    }
+
+    return sparse[index].ptr;  
+}
+
+static
+void* get_or_set_sparse(
+    ecs_chunked_t *chunked,
+    uint32_t index,
+    bool *is_new)
+{
+    ecs_assert(index < ecs_vector_count(chunked->sparse), 
+        ECS_INVALID_PARAMETER, NULL);
+
+    sparse_elem_t *sparse = ecs_vector_first(chunked->sparse);
+    uint32_t dense = sparse[index].dense;
+
+    uint32_t *dense_array = ecs_vector_first(chunked->dense);
+    uint32_t dense_count = ecs_vector_count(chunked->dense);
+
+    if (dense >= dense_count || dense_array[dense] != index) {
+        ecs_assert(index < ecs_vector_count(chunked->sparse), ECS_INVALID_PARAMETER, NULL);
+        ecs_vector_add(&chunked->dense, &dense_param);
+
+        dense_array = ecs_vector_first(chunked->dense);
+        sparse[index].dense = dense_count;
+        dense_array[dense_count] = index;
+
+        if (is_new) {
+            *is_new = true;
+        }
     }
 
     return sparse[index].ptr;  
@@ -151,8 +191,8 @@ void* _ecs_chunked_add(
     uint32_t element_size)
 {
     (void)element_size;
-    ecs_assert(
-        element_size == chunked->element_size, ECS_INVALID_PARAMETER, NULL);
+    ecs_assert(!element_size || element_size == chunked->element_size, 
+        ECS_INVALID_PARAMETER, NULL);
 
     uint32_t index = 0;
     
@@ -184,7 +224,8 @@ void* _ecs_chunked_remove(
     uint32_t index)
 {   
     (void)element_size;
-    ecs_assert(element_size == chunked->element_size, ECS_INVALID_PARAMETER, NULL);
+    ecs_assert(!element_size || element_size == chunked->element_size, 
+        ECS_INVALID_PARAMETER, NULL);
 
     uint32_t *free_elem = ecs_vector_add(&chunked->free_stack, &free_param);
     *free_elem = index;
@@ -201,12 +242,16 @@ void* _ecs_chunked_get(
     ecs_assert(index < ecs_vector_count(chunked->dense), 
         ECS_INVALID_PARAMETER, NULL);
     
-    ecs_assert(element_size == chunked->element_size, 
+    ecs_assert(!element_size || element_size == chunked->element_size, 
         ECS_INVALID_PARAMETER, NULL);
 
     const uint32_t *it = ecs_vector_first(chunked->dense);
 
-    return get_sparse(chunked, it[index], false);
+    void *result = get_sparse(chunked, it[index], false);
+
+    ecs_assert(result != NULL, ECS_INVALID_PARAMETER, NULL);
+
+    return result;
 }
 
 void* _ecs_chunked_get_sparse(
@@ -215,16 +260,35 @@ void* _ecs_chunked_get_sparse(
     uint32_t index)
 {
     (void)element_size;
-    ecs_assert(element_size == chunked->element_size, 
+    ecs_assert(!element_size || element_size == chunked->element_size, 
         ECS_INVALID_PARAMETER, NULL);
 
     return get_sparse(chunked, index, false);
+}
+
+void* _ecs_chunked_get_or_set_sparse(
+    ecs_chunked_t *chunked,
+    uint32_t element_size,
+    uint32_t index,
+    bool *is_new)
+{
+    (void)element_size;
+    ecs_assert(!element_size || element_size == chunked->element_size, 
+        ECS_INVALID_PARAMETER, NULL);
+
+    return get_or_set_sparse(chunked, index, is_new);
 }
 
 uint32_t ecs_chunked_count(
     const ecs_chunked_t *chunked)
 {
     return ecs_vector_count(chunked->dense);
+}
+
+uint32_t ecs_chunked_size(
+    const ecs_chunked_t *chunked)
+{
+    return ecs_vector_count(chunked->chunks) * chunked->chunk_size;
 }
 
 const uint32_t* ecs_chunked_indices(
@@ -259,5 +323,14 @@ void ecs_chunked_memory(
 
     if (used) {
         *used += data_total - data_not_used;
+    }
+}
+
+void ecs_chunked_set_size(
+    ecs_chunked_t *chunked,
+    uint32_t size)
+{    
+    while (size > ecs_chunked_size(chunked)) {
+        add_chunk(chunked);
     }
 }

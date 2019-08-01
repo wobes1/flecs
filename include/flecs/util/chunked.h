@@ -55,6 +55,10 @@ uint32_t ecs_chunked_count(
     const ecs_chunked_t *chunked);
 
 FLECS_EXPORT
+uint32_t ecs_chunked_size(
+    const ecs_chunked_t *chunked);
+
+FLECS_EXPORT
 void* _ecs_chunked_get_sparse(
     const ecs_chunked_t *chunked,
     uint32_t size,
@@ -64,8 +68,23 @@ void* _ecs_chunked_get_sparse(
     ((type*)_ecs_chunked_get_sparse(chunked, sizeof(type), index))
 
 FLECS_EXPORT
+void* _ecs_chunked_get_or_set_sparse(
+    ecs_chunked_t *chunked,
+    uint32_t element_size,
+    uint32_t index,
+    bool *is_new);
+
+#define ecs_chunked_get_or_set_sparse(chunked, type, index, is_new)\
+    ((type*)_ecs_chunked_get_or_set_sparse(chunked, sizeof(type), index, is_new))
+
+FLECS_EXPORT
 const uint32_t* ecs_chunked_indices(
     const ecs_chunked_t *chunked);
+
+FLECS_EXPORT
+void ecs_chunked_set_size(
+    ecs_chunked_t *chunked,
+    uint32_t size);
 
 FLECS_EXPORT
 void ecs_chunked_memory(

@@ -40,17 +40,17 @@ void merge_commits(
     }
 
     ecs_map_iter_t it = ecs_map_iter(stage->entity_index);
+    ecs_entity_t entity;
+    ecs_row_t *row;
 
-    while (ecs_map_hasnext(&it)) {
-        ecs_entity_t entity;
-        ecs_row_t *row = ecs_map_next_w_key(&it, &entity);
+    while ((row = ecs_map_next(&it, ecs_row_t, &entity))) {
         ecs_merge_entity(world, stage, entity, *row);
     }
 
     it = ecs_map_iter(stage->data_stage);
-    while (ecs_map_hasnext(&it)) {
-        ecs_vector_t *stage = ecs_map_nextptr(&it);
-        ecs_vector_free(stage);
+    ecs_vector_t *data_stage;
+    while ((data_stage = ecs_map_next_ptr(&it, ecs_vector_t*, NULL))) {
+        ecs_vector_free(data_stage);
     }
 
     ecs_map_clear(stage->entity_index);
@@ -93,7 +93,7 @@ void ecs_stage_init(
 
     memset(stage, 0, sizeof(ecs_stage_t));
 
-    stage->entity_index = ecs_map_new(0, sizeof(ecs_row_t));
+    stage->entity_index = ecs_map_new(ecs_row_t, 0);
 
     if (is_main_stage) {
         stage->last_link = &world->main_stage.type_root.link;
@@ -103,16 +103,16 @@ void ecs_stage_init(
     } else {
     }
     
-    stage->table_index = ecs_map_new(0, sizeof(ecs_table_t*));
+    stage->table_index = ecs_map_new(ecs_table_t*, 0);
     if (is_main_stage) {
-        stage->tables = ecs_chunked_new(ecs_table_t, 64, 1);
+        stage->tables = ecs_chunked_new(ecs_table_t, 64, 0);
     } else {
         stage->tables = ecs_chunked_new(ecs_table_t, 8, 0);
     }
 
     if (!is_main_stage) {
-        stage->data_stage = ecs_map_new(0, sizeof(ecs_table_column_t*));
-        stage->remove_merge = ecs_map_new(0, sizeof(ecs_type_t));
+        stage->data_stage = ecs_map_new(ecs_table_column_t*, 0);
+        stage->remove_merge = ecs_map_new(ecs_type_t, 0);
     }
 
     stage->commit_count = 0;

@@ -32,15 +32,18 @@ ecs_entity_t components_contains(
 
         if (entity & ECS_CHILDOF) {
             entity &= ECS_ENTITY_MASK;
-            ecs_row_t *row = ecs_map_get_ptr(world->main_stage.entity_index, entity);
+            ecs_row_t *row = ecs_map_get(
+                world->main_stage.entity_index, ecs_row_t, entity);
             ecs_assert(row != 0, ECS_INTERNAL_ERROR, NULL);
 
-            ecs_entity_t component = ecs_type_contains(
-                world, row->table->type, type, match_all, true);
+            if (row->table) {
+                ecs_entity_t component = ecs_type_contains(
+                    world, row->table->type, type, match_all, true);
 
-            if (component != 0) {
-                if (entity_out) *entity_out = entity;
-                return component;
+                if (component != 0) {
+                    if (entity_out) *entity_out = entity;
+                    return component;
+                }
             }
         }
     }
@@ -56,7 +59,8 @@ ecs_entity_t ecs_get_entity_for_component(
     ecs_entity_t component)
 {
     if (entity) {
-        ecs_row_t *row = ecs_map_get_ptr(world->main_stage.entity_index, entity);
+        ecs_row_t *row = ecs_map_get(
+            world->main_stage.entity_index, ecs_row_t, entity);
         ecs_assert(row != NULL, ECS_INTERNAL_ERROR, NULL);
         type = row->table->type;
     }
