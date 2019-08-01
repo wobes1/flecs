@@ -16,7 +16,7 @@ void populate(ecs_chunked_t *ch, int count) {
 }
 
 void Chunked_add_1() {
-    ecs_chunked_t *ch = ecs_chunked_new(int, 64, 1);
+    ecs_chunked_t *ch = ecs_chunked_new(int, 1);
     test_assert(ch != NULL);
     test_int(ecs_chunked_count(ch), 0);
 
@@ -32,7 +32,7 @@ void Chunked_add_1() {
 }
 
 void Chunked_add_1_to_empty() {
-    ecs_chunked_t *ch = ecs_chunked_new(int, 64, 0);
+    ecs_chunked_t *ch = ecs_chunked_new(int, 0);
     test_assert(ch != NULL);
     test_int(ecs_chunked_count(ch), 0);
 
@@ -48,7 +48,7 @@ void Chunked_add_1_to_empty() {
 }
 
 void Chunked_add_1_chunk_size_1() {
-    ecs_chunked_t *ch = ecs_chunked_new(int, 1, 1);
+    ecs_chunked_t *ch = ecs_chunked_new(int, 1);
     test_assert(ch != NULL);
     test_int(ecs_chunked_count(ch), 0);
 
@@ -64,7 +64,7 @@ void Chunked_add_1_chunk_size_1() {
 }
 
 void Chunked_add_n() {
-    ecs_chunked_t *ch = ecs_chunked_new(int, 64, 1);
+    ecs_chunked_t *ch = ecs_chunked_new(int, 1);
     test_assert(ch != NULL);
     test_int(ecs_chunked_count(ch), 0);
 
@@ -88,7 +88,7 @@ void Chunked_add_n() {
 }
 
 void Chunked_add_n_chunk_size_1() {
-    ecs_chunked_t *ch = ecs_chunked_new(int, 1, 1);
+    ecs_chunked_t *ch = ecs_chunked_new(int, 1);
     test_assert(ch != NULL);
     test_int(ecs_chunked_count(ch), 0);
 
@@ -112,7 +112,7 @@ void Chunked_add_n_chunk_size_1() {
 }
 
 void Chunked_remove() {
-    ecs_chunked_t *ch = ecs_chunked_new(int, 64, 1);
+    ecs_chunked_t *ch = ecs_chunked_new(int, 1);
     test_assert(ch != NULL);
     test_int(ecs_chunked_count(ch), 0);
 
@@ -136,7 +136,7 @@ void Chunked_remove() {
 }
 
 void Chunked_remove_first() {
-    ecs_chunked_t *ch = ecs_chunked_new(int, 64, 1);
+    ecs_chunked_t *ch = ecs_chunked_new(int, 1);
     test_assert(ch != NULL);
     test_int(ecs_chunked_count(ch), 0);
 
@@ -160,7 +160,7 @@ void Chunked_remove_first() {
 }
 
 void Chunked_remove_last() {
-    ecs_chunked_t *ch = ecs_chunked_new(int, 64, 1);
+    ecs_chunked_t *ch = ecs_chunked_new(int, 1);
     test_assert(ch != NULL);
     test_int(ecs_chunked_count(ch), 0);
 
@@ -184,7 +184,7 @@ void Chunked_remove_last() {
 }
 
 void Chunked_remove_all() {
-    ecs_chunked_t *ch = ecs_chunked_new(int, 64, 1);
+    ecs_chunked_t *ch = ecs_chunked_new(int, 1);
     test_assert(ch != NULL);
     test_int(ecs_chunked_count(ch), 0);
 
@@ -210,7 +210,7 @@ void Chunked_remove_all() {
 }
 
 void Chunked_remove_all_n_chunks() {
-    ecs_chunked_t *ch = ecs_chunked_new(int, 64, 1);
+    ecs_chunked_t *ch = ecs_chunked_new(int, 1);
     test_assert(ch != NULL);
     test_int(ecs_chunked_count(ch), 0);
 
@@ -232,7 +232,7 @@ void Chunked_remove_all_n_chunks() {
 }
 
 void Chunked_clear_1() {
-    ecs_chunked_t *ch = ecs_chunked_new(int, 64, 1);
+    ecs_chunked_t *ch = ecs_chunked_new(int, 1);
     test_assert(ch != NULL);
     test_int(ecs_chunked_count(ch), 0);
 
@@ -245,7 +245,7 @@ void Chunked_clear_1() {
 }
 
 void Chunked_clear_empty() {
-    ecs_chunked_t *ch = ecs_chunked_new(int, 64, 1);
+    ecs_chunked_t *ch = ecs_chunked_new(int, 1);
     test_assert(ch != NULL);
     test_int(ecs_chunked_count(ch), 0);
 
@@ -256,7 +256,7 @@ void Chunked_clear_empty() {
 }
 
 void Chunked_clear_n() {
-    ecs_chunked_t *ch = ecs_chunked_new(int, 64, 1);
+    ecs_chunked_t *ch = ecs_chunked_new(int, 1);
     test_assert(ch != NULL);
     test_int(ecs_chunked_count(ch), 0);
 
@@ -269,7 +269,7 @@ void Chunked_clear_n() {
 }
 
 void Chunked_clear_n_chunks() {
-    ecs_chunked_t *ch = ecs_chunked_new(int, 64, 1);
+    ecs_chunked_t *ch = ecs_chunked_new(int, 1);
     test_assert(ch != NULL);
     test_int(ecs_chunked_count(ch), 0);
 

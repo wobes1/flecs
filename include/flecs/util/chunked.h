@@ -10,11 +10,10 @@ typedef struct ecs_chunked_t ecs_chunked_t;
 FLECS_EXPORT
 ecs_chunked_t* _ecs_chunked_new(
     uint32_t element_size,
-    uint32_t chunk_size,
-    uint32_t chunk_count);
+    uint32_t element_count);
 
-#define ecs_chunked_new(type, chunk_size, chunk_count)\
-    _ecs_chunked_new(sizeof(type), chunk_size, chunk_count)
+#define ecs_chunked_new(type, element_count)\
+    _ecs_chunked_new(sizeof(type), element_count)
 
 FLECS_EXPORT
 void ecs_chunked_free(

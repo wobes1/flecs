@@ -284,11 +284,14 @@ void World_dim() {
     os_api.malloc = test_malloc;
     os_api.calloc = test_calloc;
     os_api.realloc = test_realloc;
-    ecs_os_set_api(&os_api);    
+    ecs_os_set_api(&os_api);
 
     ecs_world_t *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
+
+    /* Create table */
+    ECS_ENTITY(world, e, Position);
 
     ecs_dim(world, 1100);
 
@@ -296,7 +299,7 @@ void World_dim() {
 
     ecs_new_w_count(world, Position, 500);
 
-    test_int(malloc_count, 6);
+    test_int(malloc_count, 2);
 
     malloc_count = 0;
 
@@ -325,13 +328,13 @@ void World_dim_type() {
 
     ecs_new_w_count(world, Position, 500);
 
-    test_int(malloc_count, 2);
+    test_int(malloc_count, 106);
 
     malloc_count = 0;
 
     ecs_new_w_count(world, Position, 400);
 
-    test_int(malloc_count, 3);
+    test_int(malloc_count, 104);
 
     ecs_fini(world);
 }

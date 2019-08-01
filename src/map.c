@@ -154,6 +154,10 @@ void rehash(
         bucket_count = 8;
     }
 
+    if (bucket_count <= map->bucket_count) {
+        return;
+    }
+
     do {
         rehash_again = false;
 
@@ -219,13 +223,11 @@ ecs_map_t* _ecs_map_new(
     ecs_assert(result != NULL, ECS_OUT_OF_MEMORY, NULL);
 
     uint32_t bucket_count = get_bucket_count(element_count);
-    uint32_t chunk_count = bucket_count / CHUNK_SIZE + 1;
 
     result->count = 0;
     result->payload_size = payload_size;
     result->bucket_count = bucket_count;
-    result->buckets = _ecs_chunked_new(
-        BUCKET_SIZE(payload_size), CHUNK_SIZE, chunk_count);
+    result->buckets = _ecs_chunked_new(BUCKET_SIZE(payload_size), bucket_count);
 
     return result;
 }
@@ -313,7 +315,7 @@ void _ecs_map_set(
         ecs_assert(bucket->count < BUCKET_COUNT, ECS_INTERNAL_ERROR, NULL);
 
         uint32_t bucket_count = ++bucket->count;
-        uint32_t map_count = ++ map->count;
+        uint32_t map_count = ++map->count;
         
         *elem = key;
         memcpy(PAYLOAD(elem), payload, payload_size);
@@ -323,8 +325,10 @@ void _ecs_map_set(
 
         if (bucket_count == BUCKET_COUNT) {
             rehash(map, map_bucket_count * 2);
-        } else if (target_bucket_count > map_bucket_count) {
-            rehash(map, target_bucket_count);
+        } else {
+            if (target_bucket_count > map_bucket_count) {
+                rehash(map, target_bucket_count);
+            }
         }
     } else {
         *found = key;
@@ -471,13 +475,14 @@ void ecs_map_grow(
     ecs_assert(map != NULL, ECS_INVALID_PARAMETER, NULL);
     uint32_t target_count = map->count + element_count;
     uint32_t bucket_count = get_bucket_count(target_count);
+
     rehash(map, bucket_count);
 }
 
 void ecs_map_set_size(
     ecs_map_t *map, 
     uint32_t element_count)
-{
+{    
     ecs_assert(map != NULL, ECS_INVALID_PARAMETER, NULL);
     uint32_t bucket_count = get_bucket_count(element_count);
     rehash(map, bucket_count);

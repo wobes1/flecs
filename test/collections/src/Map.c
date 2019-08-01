@@ -69,7 +69,7 @@ void Map_set_rehash() {
         ecs_map_set(map, i + 1000000, &(char*){"yyy"});
     }    
 
-    test_int(ecs_map_bucket_count(map), 32);
+    test_int(ecs_map_bucket_count(map), 64);
     test_str(ecs_map_get_ptr(map, char*, 1 + 1000000), "yyy");
     test_str(ecs_map_get_ptr(map, char*, 2 + 1000000), "yyy");
     test_str(ecs_map_get_ptr(map, char*, 3 + 1000000), "yyy");
@@ -123,7 +123,7 @@ void Map_get_all() {
 void Map_get_empty() {
     ecs_map_t *map = ecs_map_new(char*, 16);
     char *value = ecs_map_get_ptr(map, char*, 1);
-    test_assert(value != NULL);
+    test_assert(value == NULL);
     ecs_map_free(map);
 }
 
@@ -131,7 +131,7 @@ void Map_get_unknown() {
     ecs_map_t *map = ecs_map_new(char*, 16);
     fill_map(map);
     char *value = ecs_map_get_ptr(map, char*, 5);
-    test_assert(value != NULL);
+    test_assert(value == NULL);
     ecs_map_free(map);
 }
 
@@ -165,7 +165,7 @@ void Map_remove() {
     ecs_map_t *map = ecs_map_new(char*, 16);
     fill_map(map);
     ecs_map_remove(map, 3);
-    test_assert(ecs_map_get(map, char*, 3) != NULL);
+    test_assert(ecs_map_get(map, char*, 3) == NULL);
     test_int(ecs_map_count(map), 3);
     ecs_map_free(map);
 }

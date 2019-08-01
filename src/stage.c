@@ -105,9 +105,9 @@ void ecs_stage_init(
     
     stage->table_index = ecs_map_new(ecs_table_t*, 0);
     if (is_main_stage) {
-        stage->tables = ecs_chunked_new(ecs_table_t, 64, 0);
+        stage->tables = ecs_chunked_new(ecs_table_t, 0);
     } else {
-        stage->tables = ecs_chunked_new(ecs_table_t, 8, 0);
+        stage->tables = ecs_chunked_new(ecs_table_t, 0);
     }
 
     if (!is_main_stage) {

@@ -108,6 +108,12 @@ void ecs_vector_reclaim(
     const ecs_vector_params_t *params);
 
 FLECS_EXPORT
+uint32_t ecs_vector_grow(
+    ecs_vector_t **array,
+    const ecs_vector_params_t *params,
+    uint32_t size);
+
+FLECS_EXPORT
 uint32_t ecs_vector_set_size(
     ecs_vector_t **array,
     const ecs_vector_params_t *params,

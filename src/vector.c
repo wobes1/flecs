@@ -53,6 +53,7 @@ void* ecs_vector_addn(
     const ecs_vector_params_t *params,
     uint32_t n_elems)
 {
+
     ecs_vector_t *array = *array_inout;
     if (!array) {
         array = ecs_vector_new(params, 1);
@@ -262,6 +263,15 @@ uint32_t ecs_vector_set_size(
 
         return result;
     }
+}
+
+uint32_t ecs_vector_grow(
+    ecs_vector_t **array_inout,
+    const ecs_vector_params_t *params,
+    uint32_t size)
+{
+    uint32_t current = ecs_vector_count(*array_inout);
+    return ecs_vector_set_size(array_inout, params, current + size);
 }
 
 uint32_t ecs_vector_set_count(
