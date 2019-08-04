@@ -99,10 +99,10 @@ void World_progress_w_t() {
 void World_entity_range_offset() {
     ecs_world_t *world = ecs_init();
 
-    ecs_set_entity_range(world, 50, 0);
+    ecs_set_entity_range(world, 5000, 0);
 
     ecs_entity_t e = ecs_new(world, 0);
-    test_int(e, 50);
+    test_int(e, 5000);
 
     ecs_fini(world);
 }
@@ -114,7 +114,7 @@ void World_entity_range_offset_out_of_range() {
 
     ECS_COMPONENT(world, Position);
 
-    ecs_set_entity_range(world, 50, 0);
+    ecs_set_entity_range(world, 5000, 0);
 
     test_expect_abort();
 
@@ -130,11 +130,11 @@ void World_entity_range_limit_out_of_range() {
 
     ECS_COMPONENT(world, Position);
 
-    ecs_set_entity_range(world, 0, 50);
+    ecs_set_entity_range(world, 0, 5000);
 
     test_expect_abort();
 
-    ecs_add(world, 60, Position);
+    ecs_add(world, 6000, Position);
 
     ecs_fini(world);
 }
@@ -145,15 +145,15 @@ void World_entity_range_out_of_range_check_disabled() {
     ECS_COMPONENT(world, Position);
 
     ecs_enable_range_check(world, false);
-    ecs_set_entity_range(world, 50, 100);
+    ecs_set_entity_range(world, 5000, 5050);
 
     /* Validate that range is being used when issuing new ids */
     ecs_entity_t e = ecs_new(world, 0);
-    test_int(e, 50);
+    test_int(e, 5000);
 
     /* Validate that application does not abort when changing out of range */
-    ecs_entity_t e2 = ecs_set(world, 49, Position, {10, 20});
-    test_int(e2, 49);
+    ecs_entity_t e2 = ecs_set(world, 2000, Position, {10, 20});
+    test_int(e2, 2000);
     test_assert( ecs_has(world, e2, Position));
     
     Position *p = ecs_get_ptr(world, e2, Position);
@@ -184,9 +184,9 @@ void World_entity_range_add_existing_in_progress() {
 
     ecs_entity_t e = ecs_new(world, Position);
     test_assert(e != 0);
-    test_assert(e < 500);
+    test_assert(e < 5000);
 
-    ecs_set_entity_range(world, 500, 1000);
+    ecs_set_entity_range(world, 5000, 6000);
 
     ecs_progress(world, 1);
 
@@ -201,10 +201,10 @@ void World_entity_range_add_in_range_in_progress() {
 
     ECS_SYSTEM(world, AddToExisting, EcsOnUpdate, Position, .Velocity);
 
-    ecs_set_entity_range(world, 500, 1000);
+    ecs_set_entity_range(world, 5000, 6000);
 
     ecs_entity_t e = ecs_new(world, Position);
-    test_assert(e == 500);
+    test_assert(e == 5000);
 
     ecs_progress(world, 1);
 
@@ -217,7 +217,7 @@ void AddOutOfRange(ecs_rows_t *rows) {
     int i;
     for (i = 0; i < rows->count; i ++) {
         test_expect_abort();
-        ecs_add(rows->world, 1001, Velocity);
+        ecs_add(rows->world, 6001, Velocity);
     }
 }
 
@@ -231,11 +231,11 @@ void World_entity_range_add_out_of_range_in_progress() {
 
     ECS_SYSTEM(world, AddOutOfRange, EcsOnUpdate, Position, .Velocity);
 
-    ecs_set_entity_range(world, 500, 1000);
+    ecs_set_entity_range(world, 5000, 6000);
 
     /* Dummy entity to invoke the system */
     ecs_entity_t e = ecs_new(world, Position);
-    test_assert(e == 500);
+    test_assert(e == 5000);
 
     ecs_progress(world, 1);
 
@@ -328,13 +328,13 @@ void World_dim_type() {
 
     ecs_new_w_count(world, Position, 500);
 
-    test_int(malloc_count, 12);
+    test_int(malloc_count, 3);
 
     malloc_count = 0;
 
     ecs_new_w_count(world, Position, 400);
 
-    test_int(malloc_count, 2);
+    test_int(malloc_count, 6);
 
     ecs_fini(world);
 }

@@ -1748,7 +1748,9 @@ ecs_entity_t ecs_new_component(
         return result;
     }
 
-    result = _ecs_new(world, world->t_component);
+    result = world->last_component ++;
+    
+    _ecs_add(world, result, world->t_component);
     ecs_set(world, result, EcsComponent, {.size = size});
     ecs_set(world, result, EcsId, {id});
 

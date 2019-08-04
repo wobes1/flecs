@@ -629,7 +629,7 @@ ecs_world_t *ecs_init(void) {
     world->type_handles = ecs_map_new(ecs_entity_t, 0);
     world->prefab_parent_index = ecs_map_new(ecs_entity_t, 0);
     world->singleton_row = (ecs_row_t){0, 0};
-    world->entity_index = ecs_chunked_new(ecs_row_t, 0);
+    world->entity_index = ecs_chunked_new(ecs_row_t, ECS_MAX_COMPONENTS);
 
     world->worker_stages = NULL;
     world->worker_threads = NULL;
@@ -682,7 +682,8 @@ ecs_world_t *ecs_init(void) {
     bootstrap_component(world, table, EEcsHidden, ECS_HIDDEN_ID, 0);
     bootstrap_component(world, table, EEcsDisabled, ECS_DISABLED_ID, 0);
 
-    world->last_handle = EEcsDisabled + 1;
+    world->last_handle = ECS_MAX_COMPONENTS;
+    world->last_component = EEcsDisabled + 1;
     world->min_handle = 0;
     world->max_handle = 0;
 
@@ -840,7 +841,7 @@ void ecs_dim(
     uint32_t entity_count)
 {
     assert(world->magic == ECS_WORLD_MAGIC);
-    ecs_chunked_set_size(world->entity_index, entity_count);
+    ecs_chunked_set_size(world->entity_index, entity_count + ECS_MAX_COMPONENTS);
 }
 
 void _ecs_dim_type(

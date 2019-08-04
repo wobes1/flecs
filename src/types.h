@@ -38,6 +38,7 @@
 #define ECS_TABLE_INITIAL_ROW_COUNT (0)
 #define ECS_SYSTEM_INITIAL_TABLE_COUNT (0)
 #define ECS_MAX_JOBS_PER_WORKER (16)
+#define ECS_MAX_COMPONENTS (1024)
 
 /* This is _not_ the max number of entities that can be of a given type. This 
  * constant defines the maximum number of components, prefabs and parents can be
@@ -437,6 +438,7 @@ struct ecs_world {
     uint32_t threads_running;        /* Number of threads running */
 
     ecs_entity_t last_handle;        /* Last issued handle */
+    ecs_entity_t last_component;     /* Last issued handle for components */
     ecs_entity_t min_handle;         /* First allowed handle */
     ecs_entity_t max_handle;         /* Last allowed handle */
 
