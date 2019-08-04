@@ -356,7 +356,7 @@ ecs_type_t ecs_notify_row_system(
     ecs_entity_t system,
     ecs_type_t type,
     ecs_table_t *table,
-    ecs_table_column_t *table_columns,
+    ecs_column_t *table_columns,
     uint32_t offset,
     uint32_t limit)
 {
@@ -654,7 +654,7 @@ void* get_owned_column(
     ecs_assert(rows->table_columns != NULL, ECS_INTERNAL_ERROR, NULL);
     (void)size;
 
-    ecs_table_column_t *column = &((ecs_table_column_t*)rows->table_columns)[table_column];
+    ecs_column_t *column = &((ecs_column_t*)rows->table_columns)[table_column];
     ecs_assert(column->size != 0, ECS_COLUMN_HAS_NO_DATA, NULL);
     ecs_assert(!size || column->size == size, ECS_COLUMN_TYPE_MISMATCH, NULL);
     void *buffer = ecs_vector_first(column->data);

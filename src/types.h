@@ -130,10 +130,10 @@ typedef struct ecs_lifecycle_t {
 } ecs_lifecycle_t;
 
 /** A table column describes a single column in a table (archetype) */
-typedef struct ecs_table_column_t {
+typedef struct ecs_column_t {
     ecs_vector_t *data;              /* Column data */
     uint16_t size;                   /* Column size (saves component lookups) */
-} ecs_table_column_t;
+} ecs_column_t;
 
 #define EcsTableIsStaged  (1)
 #define EcsTableIsPrefab (2)
@@ -144,7 +144,7 @@ typedef struct ecs_table_column_t {
  * entity has a set of components not previously observed before. When a new
  * table is created, it is automatically matched with existing column systems */
 typedef struct ecs_table_t {
-    ecs_table_column_t *columns;      /* Columns storing components of array */
+    ecs_column_t *columns;      /* Columns storing components of array */
     ecs_vector_t *frame_systems;      /* Frame systems matched with table */
     ecs_type_t type;                  /* Identifies table type in type_index */
     uint32_t flags;                   /* Flags for testing table properties */
@@ -339,7 +339,7 @@ typedef struct ecs_entity_info_t {
     ecs_type_t type;
     int32_t index;
     ecs_table_t *table;
-    ecs_table_column_t *columns;
+    ecs_column_t *columns;
     bool is_watched;
 
     /* Used for determining if ecs_entity_info_t should be invalidated */

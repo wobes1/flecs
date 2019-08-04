@@ -901,7 +901,7 @@ ecs_entity_t _ecs_run_w_filter(
         ecs_matched_table_t *table = &tables[i];
 
         ecs_table_t *world_table = table->table;
-        ecs_table_column_t *table_data = world_table->columns;
+        ecs_column_t *table_data = world_table->columns;
         uint32_t first = 0, count = ecs_table_count(world_table);
 
         if (filter) {
@@ -954,7 +954,7 @@ ecs_entity_t _ecs_run_w_filter(
         info.count = count;
 
         ecs_entity_t *entity_buffer = 
-                ecs_vector_first(((ecs_table_column_t*)info.table_columns)[0].data);
+                ecs_vector_first(((ecs_column_t*)info.table_columns)[0].data);
         info.entities = &entity_buffer[first];
         
         action(&info);

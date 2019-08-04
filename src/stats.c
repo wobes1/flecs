@@ -326,7 +326,7 @@ void add_component_measurement(
     ecs_world_t *world,
     ecs_world_stats_t *stats,
     ecs_entity_t component,
-    ecs_table_column_t *column,
+    ecs_column_t *column,
     uint32_t *memory_allocd,
     uint32_t *memory_used)
 {

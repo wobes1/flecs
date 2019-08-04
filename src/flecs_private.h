@@ -40,7 +40,7 @@ ecs_type_t ecs_notify(
     ecs_map_t *systems,
     ecs_type_t type,
     ecs_table_t *table,
-    ecs_table_column_t *table_columns,
+    ecs_column_t *table_columns,
     int32_t offset,
     int32_t limit);
 
@@ -194,7 +194,7 @@ void ecs_table_eval_columns(
     ecs_table_t *table);
 
 /* Allocate a set of columns for a type */
-ecs_table_column_t *ecs_table_get_columns(
+ecs_column_t *ecs_table_get_columns(
     ecs_world_t *world,
     ecs_stage_t *stage,
     ecs_table_t *table);
@@ -208,14 +208,14 @@ void ecs_table_register_system(
 uint32_t ecs_table_insert(
     ecs_world_t *world,
     ecs_table_t *table,
-    ecs_table_column_t *columns,
+    ecs_column_t *columns,
     ecs_entity_t entity);
 
 /* Insert multiple rows into table (or stage) */
 uint32_t ecs_table_grow(
     ecs_world_t *world,
     ecs_table_t *table,
-    ecs_table_column_t *columns,
+    ecs_column_t *columns,
     uint32_t count,
     ecs_entity_t first_entity);
 
@@ -313,7 +313,7 @@ ecs_type_t ecs_notify_row_system(
     ecs_entity_t system,
     ecs_type_t type,
     ecs_table_t *table,
-    ecs_table_column_t *table_columns,
+    ecs_column_t *table_columns,
     uint32_t offset,
     uint32_t limit);
 

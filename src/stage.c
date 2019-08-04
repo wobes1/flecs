@@ -105,7 +105,7 @@ void ecs_stage_init(
 
     if (!is_main_stage) {
         stage->entity_index = ecs_map_new(ecs_row_t, 0);
-        stage->data_stage = ecs_map_new(ecs_table_column_t*, 0);
+        stage->data_stage = ecs_map_new(ecs_column_t*, 0);
         stage->remove_merge = ecs_map_new(ecs_type_t, 0);
     }
 

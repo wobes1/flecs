@@ -24,14 +24,14 @@ void activate_table(
 }
 
 static
-ecs_table_column_t* new_columns(
+ecs_column_t* new_columns(
     ecs_world_t *world,
     ecs_stage_t *stage,
     ecs_table_t *table,
     ecs_type_t type)
 {
-    ecs_table_column_t *result = ecs_os_calloc(
-        sizeof(ecs_table_column_t), ecs_vector_count(type) + 1);
+    ecs_column_t *result = ecs_os_calloc(
+        sizeof(ecs_column_t), ecs_vector_count(type) + 1);
 
     ecs_assert(result != NULL, ECS_OUT_OF_MEMORY, NULL);
 
@@ -64,7 +64,7 @@ ecs_table_column_t* new_columns(
 
 /* -- Private functions -- */
 
-ecs_table_column_t* ecs_table_get_columns(
+ecs_column_t* ecs_table_get_columns(
     ecs_world_t *world,
     ecs_stage_t *stage,
     ecs_table_t *table)
@@ -74,8 +74,8 @@ ecs_table_column_t* ecs_table_get_columns(
     } else {
         ecs_type_t type = table->type;
         ecs_map_t *data_stage = stage->data_stage;
-        ecs_table_column_t *columns = ecs_map_get_ptr(
-            data_stage, ecs_table_column_t*, (uintptr_t)type);
+        ecs_column_t *columns = ecs_map_get_ptr(
+            data_stage, ecs_column_t*, (uintptr_t)type);
 
         if (!columns) {
             ecs_type_t type = table->type;
@@ -142,7 +142,7 @@ void ecs_table_register_system(
 uint32_t ecs_table_insert(
     ecs_world_t *world,
     ecs_table_t *table,
-    ecs_table_column_t *columns,
+    ecs_column_t *columns,
     ecs_entity_t entity)
 {
     uint32_t column_count = ecs_vector_count(table->type);
@@ -190,7 +190,7 @@ void ecs_table_delete(
     ecs_table_t *table,
     int32_t sindex)
 {
-    ecs_table_column_t *columns = table->columns;
+    ecs_column_t *columns = table->columns;
     ecs_vector_t *entity_column = columns[0].data;
     uint32_t index, count = ecs_vector_count(entity_column);
 
@@ -252,7 +252,7 @@ void ecs_table_delete(
 uint32_t ecs_table_grow(
     ecs_world_t *world,
     ecs_table_t *table,
-    ecs_table_column_t *columns,
+    ecs_column_t *columns,
     uint32_t count,
     ecs_entity_t first_entity)
 {
@@ -301,7 +301,7 @@ int16_t ecs_table_dim(
     ecs_table_t *table,
     uint32_t count)
 {
-    ecs_table_column_t *columns = table->columns;
+    ecs_column_t *columns = table->columns;
     uint32_t column_count = ecs_vector_count(table->type);
 
     uint32_t size = ecs_vector_set_size(

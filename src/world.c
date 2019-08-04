@@ -110,7 +110,7 @@ ecs_table_t* bootstrap_component_table(
     result->type = world->t_component;
     result->frame_systems = NULL;
     result->flags = 0;
-    result->columns = ecs_os_malloc(sizeof(ecs_table_column_t) * 3);
+    result->columns = ecs_os_malloc(sizeof(ecs_column_t) * 3);
     
     ecs_assert(result->columns != NULL, ECS_OUT_OF_MEMORY, NULL);
 
@@ -861,7 +861,7 @@ void _ecs_dim_type(
 static
 ecs_entity_t ecs_lookup_child_in_columns(
     ecs_type_t type,
-    ecs_table_column_t *columns,
+    ecs_column_t *columns,
     ecs_entity_t parent,
     const char *id)
 {
@@ -875,7 +875,7 @@ ecs_entity_t ecs_lookup_child_in_columns(
         return 0;
     }
 
-    ecs_table_column_t *column = &columns[column_index + 1];
+    ecs_column_t *column = &columns[column_index + 1];
     EcsId *buffer = ecs_vector_first(column->data);
     uint32_t i, count = ecs_vector_count(column->data);
     
@@ -901,8 +901,8 @@ ecs_entity_t ecs_lookup_child(
         ecs_map_iter_t it = ecs_map_iter(stage->data_stage);
 
         uint64_t key;
-        ecs_table_column_t *columns;
-        while ((columns = ecs_map_next_ptr(&it, ecs_table_column_t*, &key))) {
+        ecs_column_t *columns;
+        while ((columns = ecs_map_next_ptr(&it, ecs_column_t*, &key))) {
             ecs_type_t key_type = (ecs_type_t)(uintptr_t)key;
             result = ecs_lookup_child_in_columns(key_type, columns, parent, id);
             if (result) {
