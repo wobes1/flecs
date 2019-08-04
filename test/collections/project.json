@@ -35,9 +35,10 @@
                 "sort_sorted",
                 "sort_empty",
                 "size_of_null",
-                "remove_index_w_move",
                 "set_size_smaller_than_count",
-                "pop_elements"
+                "pop_elements",
+                "reclaim",
+                "grow"
             ]
         }, {
             "id": "Map",
@@ -48,6 +49,7 @@
                 "set_overwrite",
                 "set_rehash",
                 "set_zero_buckets",
+                "set_size",
                 "get",
                 "get_all",
                 "get_empty",
@@ -57,7 +59,10 @@
                 "iter_zero_buckets",
                 "remove",
                 "remove_empty",
-                "remove_unknown"
+                "remove_empty_no_buckets",
+                "remove_unknown",
+                "remove_1_from_n_in_bucket",
+                "remove_from_empty_bucket"
             ]
         }, {
             "id": "Chunked",

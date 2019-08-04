@@ -87,8 +87,9 @@ void* get_sparse(
     uint32_t index,
     bool remove)
 {
-    ecs_assert(index < ecs_vector_count(chunked->sparse), 
-        ECS_INVALID_PARAMETER, NULL);
+    if (index >= ecs_vector_count(chunked->sparse)) {
+        return NULL;
+    }
 
     sparse_elem_t *sparse = ecs_vector_first(chunked->sparse);
     uint32_t dense = sparse[index].dense;
@@ -119,9 +120,11 @@ void* get_or_set_sparse(
     ecs_chunked_t *chunked,
     uint32_t index,
     bool *is_new)
-{    
-    ecs_assert(index < ecs_vector_count(chunked->sparse), 
-        ECS_INVALID_PARAMETER, NULL);
+{
+    if (index >= ecs_vector_count(chunked->sparse)) {
+        ecs_chunked_set_size(chunked, index + 1);
+        ecs_assert(index < ecs_vector_count(chunked->sparse), ECS_INTERNAL_ERROR, NULL);
+    }
 
     sparse_elem_t *sparse = ecs_vector_first(chunked->sparse);
     uint32_t dense = sparse[index].dense;
@@ -287,7 +290,7 @@ uint32_t ecs_chunked_count(
 uint32_t ecs_chunked_size(
     const ecs_chunked_t *chunked)
 {
-    return ecs_vector_count(chunked->chunks) * chunked->chunk_size;
+    return ecs_vector_count(chunked->sparse);
 }
 
 const uint32_t* ecs_chunked_indices(
@@ -333,10 +336,21 @@ void ecs_chunked_set_size(
     int32_t to_add = size - current;
 
     if (to_add > 0) {
-        ecs_vector_grow(&chunked->dense, &dense_param, to_add);
+        ecs_vector_set_size(&chunked->dense, &dense_param, size);
 
         while (ecs_chunked_size(chunked) < size) {
             add_chunk(chunked);
         }
+    }
+}
+
+void ecs_chunked_grow(
+    ecs_chunked_t *chunked,
+    uint32_t count)
+{
+    uint32_t current = ecs_chunked_count(chunked);
+
+    while (ecs_chunked_size(chunked) <= (count + current)) {
+        add_chunk(chunked);
     }
 }

@@ -30,9 +30,10 @@ void Vector_sort_rnd(void);
 void Vector_sort_sorted(void);
 void Vector_sort_empty(void);
 void Vector_size_of_null(void);
-void Vector_remove_index_w_move(void);
 void Vector_set_size_smaller_than_count(void);
 void Vector_pop_elements(void);
+void Vector_reclaim(void);
+void Vector_grow(void);
 
 // Testsuite 'Map'
 void Map_setup(void);
@@ -41,6 +42,7 @@ void Map_count_empty(void);
 void Map_set_overwrite(void);
 void Map_set_rehash(void);
 void Map_set_zero_buckets(void);
+void Map_set_size(void);
 void Map_get(void);
 void Map_get_all(void);
 void Map_get_empty(void);
@@ -50,7 +52,10 @@ void Map_iter_empty(void);
 void Map_iter_zero_buckets(void);
 void Map_remove(void);
 void Map_remove_empty(void);
+void Map_remove_empty_no_buckets(void);
 void Map_remove_unknown(void);
+void Map_remove_1_from_n_in_bucket(void);
+void Map_remove_from_empty_bucket(void);
 
 // Testsuite 'Chunked'
 void Chunked_setup(void);
@@ -73,7 +78,7 @@ void Chunked_memory_null(void);
 static bake_test_suite suites[] = {
     {
         .id = "Vector",
-        .testcase_count = 23,
+        .testcase_count = 24,
         .setup = Vector_setup,
         .testcases = (bake_test_case[]){
             {
@@ -157,22 +162,26 @@ static bake_test_suite suites[] = {
                 .function = Vector_size_of_null
             },
             {
-                .id = "remove_index_w_move",
-                .function = Vector_remove_index_w_move
-            },
-            {
                 .id = "set_size_smaller_than_count",
                 .function = Vector_set_size_smaller_than_count
             },
             {
                 .id = "pop_elements",
                 .function = Vector_pop_elements
+            },
+            {
+                .id = "reclaim",
+                .function = Vector_reclaim
+            },
+            {
+                .id = "grow",
+                .function = Vector_grow
             }
         }
     },
     {
         .id = "Map",
-        .testcase_count = 15,
+        .testcase_count = 19,
         .setup = Map_setup,
         .testcases = (bake_test_case[]){
             {
@@ -194,6 +203,10 @@ static bake_test_suite suites[] = {
             {
                 .id = "set_zero_buckets",
                 .function = Map_set_zero_buckets
+            },
+            {
+                .id = "set_size",
+                .function = Map_set_size
             },
             {
                 .id = "get",
@@ -232,8 +245,20 @@ static bake_test_suite suites[] = {
                 .function = Map_remove_empty
             },
             {
+                .id = "remove_empty_no_buckets",
+                .function = Map_remove_empty_no_buckets
+            },
+            {
                 .id = "remove_unknown",
                 .function = Map_remove_unknown
+            },
+            {
+                .id = "remove_1_from_n_in_bucket",
+                .function = Map_remove_1_from_n_in_bucket
+            },
+            {
+                .id = "remove_from_empty_bucket",
+                .function = Map_remove_from_empty_bucket
             }
         }
     },

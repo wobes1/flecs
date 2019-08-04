@@ -7,6 +7,17 @@
 
 /* -- Entity API -- */
 
+void ecs_set_entity(
+    ecs_world_t *world,
+    ecs_stage_t *stage,
+    ecs_entity_t entity,
+    ecs_row_t *row);
+
+ecs_row_t* ecs_get_entity(
+    ecs_world_t *world,
+    ecs_stage_t *stage,
+    ecs_entity_t entity);
+
 /* Merge entity with stage */
 void ecs_merge_entity(
     ecs_world_t *world,

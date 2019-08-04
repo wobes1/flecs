@@ -135,14 +135,12 @@ void bootstrap_component(
     const char *id,
     size_t size)
 {
-    ecs_stage_t *stage = &world->main_stage;
-
     /* Insert row into table to store EcsComponent itself */
     int32_t index = ecs_table_insert(world, table, table->columns, entity);
 
     /* Create record in entity index */
     ecs_row_t row = {.table = table, .index = index};
-    ecs_map_set(stage->entity_index, entity, &row);
+    ecs_set_entity(world, NULL, entity, &row);
 
     /* Set size and id */
     EcsComponent *component_data = ecs_vector_first(table->columns[1].data);
@@ -352,6 +350,8 @@ ecs_stage_t *ecs_get_stage(
 {
     ecs_world_t *world = *world_ptr;
 
+    ecs_assert(world != NULL, ECS_INTERNAL_ERROR, NULL);
+
     ecs_assert(world->magic == ECS_WORLD_MAGIC ||
                world->magic == ECS_THREAD_MAGIC,
                ECS_INTERNAL_ERROR,
@@ -366,6 +366,7 @@ ecs_stage_t *ecs_get_stage(
     } else if (world->magic == ECS_THREAD_MAGIC) {
         ecs_thread_t *thread = (ecs_thread_t*)world;
         *world_ptr = thread->world;
+        ecs_assert(*world_ptr != NULL, ECS_INTERNAL_ERROR, NULL);
         return thread->stage;
     }
     
@@ -627,6 +628,8 @@ ecs_world_t *ecs_init(void) {
     world->type_sys_set_index = ecs_map_new(ecs_vector_t*, 0);
     world->type_handles = ecs_map_new(ecs_entity_t, 0);
     world->prefab_parent_index = ecs_map_new(ecs_entity_t, 0);
+    world->singleton_row = (ecs_row_t){0, 0};
+    world->entity_index = ecs_chunked_new(ecs_row_t, 0);
 
     world->worker_stages = NULL;
     world->worker_threads = NULL;
@@ -837,7 +840,7 @@ void ecs_dim(
     uint32_t entity_count)
 {
     assert(world->magic == ECS_WORLD_MAGIC);
-    ecs_map_set_size(world->main_stage.entity_index, entity_count);
+    ecs_chunked_set_size(world->entity_index, entity_count);
 }
 
 void _ecs_dim_type(

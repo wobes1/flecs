@@ -419,6 +419,8 @@ struct ecs_world {
 
     /* -- Staging -- */
 
+    ecs_row_t singleton_row;         /* Singleton row is stored separately */
+    ecs_chunked_t *entity_index;     /* Entity index of main stage */
     ecs_stage_t main_stage;          /* Main storage */
     ecs_stage_t temp_stage;          /* Stage for when processing systems */
     ecs_vector_t *worker_stages;     /* Stages for worker threads */

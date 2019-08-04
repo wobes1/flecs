@@ -136,3 +136,19 @@ void Singleton_get_singleton_id() {
 
     ecs_fini(world);
 }
+
+void Singleton_remove_singleton() {
+    ecs_world_t *world = ecs_init();
+
+    ECS_COMPONENT(world, Position);
+
+    ecs_set_singleton(world, Position, {10, 20});
+    test_assert( ecs_has(world, ECS_SINGLETON, Position));
+    test_assert( ecs_get_singleton_ptr(world, Position) != NULL);
+
+    ecs_delete(world, ECS_SINGLETON);
+    test_assert( !ecs_has(world, ECS_SINGLETON, Position));
+    test_assert( !ecs_get_singleton_ptr(world, Position));
+
+    ecs_fini(world);
+}

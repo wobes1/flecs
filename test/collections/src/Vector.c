@@ -193,47 +193,6 @@ void Vector_remove_out_of_bound() {
     test_assert(true);
 }
 
-static void *move_elem;
-static void *move_last_elem;
-static void *move_ctx;
-
-static
-void move_func(
-    ecs_vector_t *v, 
-    const ecs_vector_params_t *params,
-    void *elem,
-    void *last_elem,
-    void *ctx)
-{
-    move_elem = elem;
-    move_last_elem = last_elem;
-    move_ctx = ctx;
-}
-
-void Vector_remove_index_w_move() {
-    int dummy = 10;
-    ecs_vector_params_t params = arr_params;
-    params.move_action = move_func;
-    params.move_ctx = &dummy;
- 
-    ecs_vector_t *vector = ecs_vector_new(&params, 4);
-    vector = fill_array(vector);
-    int *array = ecs_vector_first(vector);
-    test_assert(array != NULL);
-
-    ecs_vector_remove_index(vector, &params, 1);
-
-    test_assert(move_elem != NULL);
-    test_assert(move_last_elem != NULL);
-    test_assert(move_ctx != NULL);
-
-    test_assert(move_elem == &array[1]);
-    test_assert(move_last_elem == &array[3]);
-    test_assert(move_ctx == &dummy);
-
-    ecs_vector_free(vector);
-}
-
 void Vector_sort_rnd() {
     int nums[] = {23, 16, 21, 13, 30, 5, 28, 31, 8, 19, 29, 12, 24, 14, 15, 1, 26, 18, 9, 25, 22, 0, 10, 3, 2, 17, 27, 20, 6, 11, 4, 7};
     ecs_vector_t *array = ecs_vector_new(&arr_params, 0);
@@ -325,6 +284,38 @@ void Vector_pop_elements() {
     test_int(value, 0);
 
     test_assert( !ecs_vector_pop(array, &arr_params, &value));
+
+    ecs_vector_free(array);
+}
+
+void Vector_reclaim() {
+    ecs_vector_t *array = ecs_vector_new(&arr_params, 0);
+    array = fill_array(array);
+    array = fill_array(array);
+    array = fill_array(array);
+
+    test_int(ecs_vector_count(array), 12);
+    test_int(ecs_vector_size(array), 16);
+
+    ecs_vector_reclaim(&array, &arr_params);
+
+    test_int(ecs_vector_count(array), 12);
+    test_int(ecs_vector_size(array), 12);
+
+    ecs_vector_free(array);
+}
+
+void Vector_grow() {
+    ecs_vector_t *array = ecs_vector_new(&arr_params, 0);
+    array = fill_array(array);
+
+    test_int(ecs_vector_count(array), 4);
+    test_int(ecs_vector_size(array), 4);
+
+    ecs_vector_grow(&array, &arr_params, 8);
+
+    test_int(ecs_vector_count(array), 4);
+    test_int(ecs_vector_size(array), 12);
 
     ecs_vector_free(array);
 }

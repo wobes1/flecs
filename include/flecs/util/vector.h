@@ -20,9 +20,6 @@ typedef void (*EcsMove)(
     void *ctx);
 
 struct ecs_vector_params_t {
-    EcsMove move_action; /* Invoked when moving elements */
-    void *move_ctx;
-    void *ctx;
     uint32_t element_size; /* Size of an element */
 };
 
@@ -61,13 +58,7 @@ void* ecs_vector_get(
     const ecs_vector_t *array,
     const ecs_vector_params_t *params,
     uint32_t index);
-
-FLECS_EXPORT
-uint32_t ecs_vector_get_index(
-    const ecs_vector_t *array,
-    const ecs_vector_params_t *params,
-    void *elem);
-
+    
 FLECS_EXPORT
 void* ecs_vector_last(
     const ecs_vector_t *array,

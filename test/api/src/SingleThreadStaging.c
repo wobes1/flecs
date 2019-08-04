@@ -627,6 +627,7 @@ static
 void Add_to_current(ecs_rows_t *rows) {
     IterData *ctx = ecs_get_context(rows->world);
     int i;
+
     for (i = 0; i < rows->count; i ++) {
         if (ctx->component) {
             _ecs_add(rows->world, rows->entities[i], ctx->component);

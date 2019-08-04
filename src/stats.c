@@ -186,7 +186,7 @@ void get_memory_stats(
     calculate_stage_stats(world, &world->temp_stage, &memory->stage.allocd, &memory->stage.used);
     calculate_stages_stats(world, &memory->stage.allocd, &memory->stage.used);
 
-    ecs_map_memory(world->main_stage.entity_index, &memory->entities.allocd, &memory->entities.used);
+    ecs_chunked_memory(world->entity_index, &memory->entities.allocd, &memory->entities.used);
 
     ecs_vector_memory(world->worker_threads, &table_arr_params, &memory->world.allocd, &memory->world.used);
     stats->memory.world.allocd += sizeof(ecs_world_t) - sizeof(ecs_stage_t);
@@ -501,7 +501,7 @@ void ecs_get_stats(
     stats->memory.families.used += type_memory;
     stats->memory.families.allocd += type_memory; */
 
-    stats->entity_count = ecs_map_count(world->main_stage.entity_index);
+    stats->entity_count = ecs_chunked_count(world->entity_index);
     stats->tick_count = world->tick;
 
     if (world->tick) {

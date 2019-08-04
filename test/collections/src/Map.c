@@ -81,6 +81,20 @@ void Map_set_rehash() {
     ecs_map_free(map);
 }
 
+void Map_set_size() {
+    ecs_map_t *map = ecs_map_new(char*, 8);
+    fill_map(map);
+
+    test_int(ecs_map_bucket_count(map), 16);
+    test_int(ecs_map_count(map), 4);
+    
+    ecs_map_set_size(map, 16);
+    test_int(ecs_map_count(map), 4);
+    test_int(ecs_map_bucket_count(map), 32);
+
+    ecs_map_free(map);
+}
+
 void Map_set_zero_buckets() {
     ecs_map_t *map = ecs_map_new(char*, 0);
     ecs_map_set(map, 1, &(char*){"hello"});
@@ -177,6 +191,13 @@ void Map_remove_empty() {
     ecs_map_free(map);
 }
 
+void Map_remove_empty_no_buckets() {
+    ecs_map_t *map = ecs_map_new(char*, 0);
+    ecs_map_remove(map, 3);
+    test_int(ecs_map_count(map), 0);
+    ecs_map_free(map);
+}
+
 void Map_remove_unknown() {
     ecs_map_t *map = ecs_map_new(char*, 16);
     fill_map(map);
@@ -189,3 +210,25 @@ void Map_remove_unknown() {
     ecs_map_free(map);
 }
 
+void Map_remove_1_from_n_in_bucket() {
+    ecs_map_t *map = ecs_map_new(char*, 8);
+
+    ecs_map_set(map, 0, &(char*){"hello"});
+    ecs_map_set(map, 16, &(char*){"world"});
+    ecs_map_set(map, 32, &(char*){"foo"});
+    ecs_map_remove(map, 16);
+    test_int(ecs_map_count(map), 2);
+    test_str(ecs_map_get_ptr(map, char*, 0), "hello");
+    test_str(ecs_map_get_ptr(map, char*, 32), "foo");
+    ecs_map_free(map);
+}
+
+void Map_remove_from_empty_bucket() {
+    ecs_map_t *map = ecs_map_new(char*, 8);
+
+    ecs_map_set(map, 0, &(char*){"hello"});
+    ecs_map_remove(map, 0);
+    ecs_map_remove(map, 0);
+    test_int(ecs_map_count(map), 0);
+    ecs_map_free(map);
+}

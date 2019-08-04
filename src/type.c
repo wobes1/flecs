@@ -667,7 +667,7 @@ ecs_type_t ecs_type_merge_intern(
                 if (to_remove_intersect) {
                     to_remove_intersect->array[to_remove_intersect->count] = del;
                     to_remove_intersect->count++;
-                    ecs_assert(to_remove_intersect->count <= del_count, ECS_INTERNAL_ERROR, NULL);
+                    ecs_assert((uint32_t)to_remove_intersect->count <= del_count, ECS_INTERNAL_ERROR, NULL);
                 }
 
                 i_del ++;

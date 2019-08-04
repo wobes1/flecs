@@ -175,6 +175,7 @@ void Singleton_system_w_singleton_no_match(void);
 void Singleton_system_w_not_singleton(void);
 void Singleton_lookup_singleton(void);
 void Singleton_get_singleton_id(void);
+void Singleton_remove_singleton(void);
 
 // Testsuite 'Clone'
 void Clone_empty(void);
@@ -1336,7 +1337,7 @@ static bake_test_suite suites[] = {
     },
     {
         .id = "Singleton",
-        .testcase_count = 7,
+        .testcase_count = 8,
         .testcases = (bake_test_case[]){
             {
                 .id = "set",
@@ -1365,6 +1366,10 @@ static bake_test_suite suites[] = {
             {
                 .id = "get_singleton_id",
                 .function = Singleton_get_singleton_id
+            },
+            {
+                .id = "remove_singleton",
+                .function = Singleton_remove_singleton
             }
         }
     },

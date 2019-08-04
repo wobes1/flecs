@@ -93,24 +93,18 @@ void ecs_stage_init(
 
     memset(stage, 0, sizeof(ecs_stage_t));
 
-    stage->entity_index = ecs_map_new(ecs_row_t, 0);
-
     if (is_main_stage) {
         stage->last_link = &world->main_stage.type_root.link;
     } else if (is_temp_stage) {
         stage->type_root = world->main_stage.type_root;
         stage->last_link = NULL;
-    } else {
     }
     
     stage->table_index = ecs_map_new(ecs_table_t*, 0);
-    if (is_main_stage) {
-        stage->tables = ecs_chunked_new(ecs_table_t, 0);
-    } else {
-        stage->tables = ecs_chunked_new(ecs_table_t, 0);
-    }
+    stage->tables = ecs_chunked_new(ecs_table_t, 0);
 
     if (!is_main_stage) {
+        stage->entity_index = ecs_map_new(ecs_row_t, 0);
         stage->data_stage = ecs_map_new(ecs_table_column_t*, 0);
         stage->remove_merge = ecs_map_new(ecs_type_t, 0);
     }

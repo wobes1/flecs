@@ -228,7 +228,7 @@ void ecs_table_delete(
         ecs_row_t row;
         row.table = table;
         row.index = index + 1;
-        ecs_map_set(world->main_stage.entity_index, to_move, &row);
+        ecs_set_entity(world, NULL, to_move, &row);
 
         /* Decrease size of entity column */
         ecs_vector_remove_last(entity_column);

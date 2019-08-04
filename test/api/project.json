@@ -199,7 +199,8 @@
                 "system_w_singleton_no_match",
                 "system_w_not_singleton",
                 "lookup_singleton",
-                "get_singleton_id"
+                "get_singleton_id",
+                "remove_singleton"
             ]
         }, {
             "id": "Clone",

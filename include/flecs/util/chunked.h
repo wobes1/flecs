@@ -86,6 +86,11 @@ void ecs_chunked_set_size(
     uint32_t size);
 
 FLECS_EXPORT
+void ecs_chunked_grow(
+    ecs_chunked_t *chunked,
+    uint32_t count);
+
+FLECS_EXPORT
 void ecs_chunked_memory(
     ecs_chunked_t *chunked,
     uint32_t *allocd,

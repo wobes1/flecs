@@ -105,6 +105,16 @@ ecs_bucket_t* find_or_create_bucket(
 }
 
 static
+void remove_bucket(
+    ecs_map_t *map,
+    ecs_map_key_t key)
+{
+    uint32_t bucket_count = map->bucket_count;
+    uint32_t bucket_id = get_bucket_id(bucket_count, key);
+    _ecs_chunked_remove(map->buckets, 0, bucket_id);
+}
+
+static
 uint32_t add_to_bucket(
     ecs_bucket_t *bucket,
     uint32_t payload_size,
@@ -150,13 +160,8 @@ void rehash(
 {
     bool rehash_again;
 
-    if (bucket_count == 0) {
-        bucket_count = 8;
-    }
-
-    if (bucket_count <= map->bucket_count) {
-        return;
-    }
+    ecs_assert(bucket_count != 0, ECS_INTERNAL_ERROR, NULL);
+    ecs_assert(bucket_count > map->bucket_count, ECS_INTERNAL_ERROR, NULL);
 
     do {
         rehash_again = false;
@@ -354,9 +359,7 @@ void ecs_map_remove(
     ecs_map_key_t *elem = array;
     uint32_t bucket_count = bucket->count;
 
-    if (!bucket_count) {
-        return;
-    }
+    ecs_assert(bucket_count > 0, ECS_INTERNAL_ERROR, NULL);
 
     uint8_t i = 0;
     do {
@@ -366,8 +369,10 @@ void ecs_map_remove(
                 memcpy(elem, last_elem, ELEM_SIZE(payload_size));
             }
 
-            bucket->count --;
             map->count --;
+            if (!--bucket->count) {
+                remove_bucket(map, key);
+            }
 
             break;
         }
@@ -379,13 +384,13 @@ void ecs_map_remove(
 uint32_t ecs_map_count(
     const ecs_map_t *map)
 {
-    return map->count;
+    return map ? map->count : 0;
 }
 
 uint32_t ecs_map_bucket_count(
     const ecs_map_t *map)
 {
-    return map->bucket_count;
+    return map ? map->bucket_count : 0;
 }
 
 void ecs_map_clear(

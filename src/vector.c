@@ -131,10 +131,6 @@ uint32_t ecs_vector_remove(
     if (index != (count - 1)) {
         void *last_elem = ECS_OFFSET(buffer, element_size * (count - 1));
         memcpy(elem, last_elem, element_size);
-        if (params->move_action) {
-            params->move_action(
-                array, params, elem, last_elem, params->move_ctx);
-        }
     }
 
     count --;
@@ -191,10 +187,6 @@ uint32_t ecs_vector_remove_index(
     if (index != (count - 1)) {
         void *last_elem = ECS_OFFSET(buffer, element_size * (count - 1));
         memcpy(elem, last_elem, element_size);
-        if (params->move_action) {
-            params->move_action(
-                array, params, elem, last_elem, params->move_ctx);
-        }
     }
 
     count --;
@@ -310,17 +302,6 @@ void* ecs_vector_get(
     }
 
     return ECS_OFFSET(ARRAY_BUFFER(array), element_size * index);
-}
-
-uint32_t ecs_vector_get_index(
-    const ecs_vector_t *array,
-    const ecs_vector_params_t *params,
-    void *elem)
-{
-    ecs_assert(elem != NULL, ECS_INVALID_PARAMETER, NULL);
-    uint32_t element_size = params->element_size;
-    void *buffer = ARRAY_BUFFER(array);
-    return ((char*)elem - (char*)buffer) / element_size;
 }
 
 void* ecs_vector_last(

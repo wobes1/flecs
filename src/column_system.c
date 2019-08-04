@@ -32,8 +32,8 @@ ecs_entity_t components_contains(
 
         if (entity & ECS_CHILDOF) {
             entity &= ECS_ENTITY_MASK;
-            ecs_row_t *row = ecs_map_get(
-                world->main_stage.entity_index, ecs_row_t, entity);
+
+            ecs_row_t *row = ecs_get_entity(world, NULL, entity);
             ecs_assert(row != 0, ECS_INTERNAL_ERROR, NULL);
 
             if (row->table) {
@@ -59,8 +59,7 @@ ecs_entity_t ecs_get_entity_for_component(
     ecs_entity_t component)
 {
     if (entity) {
-        ecs_row_t *row = ecs_map_get(
-            world->main_stage.entity_index, ecs_row_t, entity);
+        ecs_row_t *row = ecs_get_entity(world, NULL, entity);
         ecs_assert(row != NULL, ECS_INTERNAL_ERROR, NULL);
         type = row->table->type;
     }
