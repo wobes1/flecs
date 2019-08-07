@@ -39,7 +39,7 @@ typedef struct ecs_time_t {
 /* Utility headers */
 #include <flecs/util/os_api.h>
 #include <flecs/util/vector.h>
-#include <flecs/util/chunked.h>
+#include <flecs/util/sparse.h>
 #include <flecs/util/map.h>
 #include <flecs/util/stats.h>
 #include <flecs/util/os_api.h>
@@ -88,6 +88,7 @@ typedef enum EcsSystemKind {
     EcsManual,
 
     /* Reactive systems */
+    EcsOnNew,
     EcsOnAdd,
     EcsOnRemove,
     EcsOnSet
@@ -132,21 +133,17 @@ typedef void (*ecs_module_init_action_t)(
     ecs_world_t *world,
     int flags);
 
-/** Component lifecycle actions */
-typedef void (*ecs_component_init_t)(
+/** Component calbacks */
+typedef void (*ecs_init_t)(
     void *data,
     void *ctx);
 
-typedef void (*ecs_component_deinit_t)(
-    void *data,
-    void *ctx);
-
-typedef void (*ecs_component_replace_t)(
+typedef void (*ecs_replace_t)(
     void *old,
     void *_new,
     void *ctx);
 
-typedef void (*ecs_component_merge_t)(
+typedef void (*ecs_merge_t)(
     void *src,
     void *dst,
     void *ctx);
@@ -632,19 +629,19 @@ bool ecs_enable_range_check(
     ecs_world_t *world,
     bool enable);
 
-/** Set component lifecycle callbacks.
- */
+/** Set component callbacks. */
 FLECS_EXPORT
-void _ecs_set_lifecycle_callbacks(
+void _ecs_set_component_callbacks(
     ecs_world_t *world,
     ecs_entity_t component,
-    ecs_component_init_t init,
-    ecs_component_deinit_t deinit,
-    ecs_component_replace_t replace,
-    ecs_component_merge_t merge);
+    ecs_init_t init,
+    ecs_init_t fini,
+    ecs_replace_t replace,
+    ecs_merge_t merge,
+    void *ctx);
 
-#define ecs_set_lifecycle_callbacks(world, component, init, deinit, replace, merge)\
-    _ecs_set_lifecycle_callbacks(world, ecs_entity(component), init, deinit, replace, merge)
+#define ecs_set_component_callbacks(world, component, init, fini, replace, merge, ctx)\
+    _ecs_set_component_callbacks(world, ecs_entity(component), init, fini, replace, merge, ctx)
 
 /* -- Entity API -- */
 
@@ -1950,6 +1947,7 @@ void _ecs_assert(
 #define ECS_MISSING_OS_API (31)
 #define ECS_TYPE_TOO_LARGE (32)
 #define ECS_INVALID_PREFAB_CHILD_TYPE (33)
+#define ECS_UNINITIALIZED_READ (34)
 
 /* -- Convenience macro's for wrapping around generated types and entities -- */
 

@@ -1,60 +1,6 @@
 #include "flecs_private.h"
 
 static
-void match_type(
-    ecs_world_t *world,
-    ecs_entity_t system,
-    EcsRowSystem *system_data,
-    ecs_type_t type)
-{
-    /* Test if the components of the system are equal or a subset of the 
-     * components of the type */
-    ecs_entity_t match = ecs_type_contains(
-        world, type, system_data->base.and_from_self, true, false);
-
-    /* If there is a match, add the system to the type-row_system index */
-    if (match) {
-        ecs_map_t *index = NULL;
-        EcsSystemKind kind = system_data->base.kind;
-
-        if (kind == EcsOnAdd) {
-            index = world->type_sys_add_index;
-        } else if (kind == EcsOnRemove) {
-            index = world->type_sys_remove_index;
-        } else if (kind == EcsOnSet) {
-            index = world->type_sys_set_index;
-        }
-
-        ecs_assert(index != NULL, ECS_INTERNAL_ERROR, NULL);
-
-        ecs_vector_t *systems = ecs_map_get_ptr(index, ecs_vector_t*, (uintptr_t)type);
-        if (!systems) {
-            systems = ecs_vector_new(&handle_arr_params, 1);
-        }
-
-        ecs_entity_t *new_elem = ecs_vector_add(&systems, &handle_arr_params);
-        *new_elem = system;
-
-        /* Always set the system entry, as array may have been realloc'd */
-        ecs_map_set(index, (uintptr_t)type, &systems);
-    }
-}
-
-/* Match system against existing families to build the type-rowsys index */
-static
-void match_families(
-    ecs_world_t *world,
-    ecs_entity_t system,
-    EcsRowSystem *system_data)
-{
-    ecs_type_link_t *link = &world->main_stage.type_root.link;
-
-    do {
-        match_type(world, system, system_data, link->type);
-    } while ((link = link->next));
-}
-
-static
 bool has_refs(
     EcsSystem *system_data)
 {
@@ -92,10 +38,10 @@ ecs_entity_t new_row_system(
     const char *sig,
     ecs_system_action_t action)
 {
-    uint32_t count = ecs_columns_count(sig);
+    uint32_t count = ecs_signature_columns_count(sig);
     ecs_assert(count != 0, ECS_INVALID_PARAMETER, NULL);
 
-    ecs_entity_t result = _ecs_new(world, world->t_row_system);
+    ecs_entity_t result = _ecs_new(world, world->t_row_system->type);
 
     EcsId *id_data = ecs_get_ptr(world, result, EcsId);
     ecs_assert(id_data != NULL, ECS_INTERNAL_ERROR, NULL);
@@ -141,13 +87,7 @@ ecs_entity_t new_row_system(
             elem = ecs_vector_add(&world->fini_tasks, &handle_arr_params);
         }
     } else {
-        if (kind == EcsOnAdd) {
-            elem = ecs_vector_add(&world->add_systems, &handle_arr_params);
-        } else if (kind == EcsOnRemove) {
-            elem = ecs_vector_add(&world->remove_systems, &handle_arr_params);
-        } else if (kind == EcsOnSet) {
-            elem = ecs_vector_add(&world->set_systems, &handle_arr_params);
-        }
+
     }
 
     if (elem) {
@@ -157,10 +97,6 @@ ecs_entity_t new_row_system(
     ecs_system_compute_and_families(world, &system_data->base);
 
     ecs_system_init_base(world, &system_data->base);
-
-    if (needs_tables) {
-        match_families(world, result, system_data);
-    }
 
     return result;
 }
@@ -478,18 +414,6 @@ void ecs_run_task(
     ecs_notify_row_system(world, system, NULL, NULL, NULL, 0, 1);
 }
 
-/* Notify row system of a new type */
-void ecs_row_system_notify_of_type(
-    ecs_world_t *world,
-    ecs_stage_t *stage,
-    ecs_entity_t system,
-    ecs_type_t type)
-{
-    (void)stage;
-
-    EcsRowSystem *system_data = ecs_get_ptr(world, system, EcsRowSystem);
-    match_type(world, system, system_data, type);
-}
 
 /* -- Public API -- */
 

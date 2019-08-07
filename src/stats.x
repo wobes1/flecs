@@ -84,11 +84,11 @@ void calculate_table_stats(
     uint32_t *allocd,
     uint32_t *used)
 {
-    ecs_chunked_t *tables = world->main_stage.tables;
-    uint32_t i, count = ecs_chunked_count(tables);
+    ecs_sparse_t *tables = world->main_stage.tables;
+    uint32_t i, count = ecs_sparse_count(tables);
 
     for (i = 0; i < count; i ++) {
-        ecs_table_t *table = ecs_chunked_get(tables, ecs_table_t, i);
+        ecs_table_t *table = ecs_sparse_get(tables, ecs_table_t, i);
         ecs_vector_memory(table->frame_systems, &handle_arr_params, allocd, used);
         *allocd += ecs_vector_count(table->type) * sizeof(uint16_t);
         *used += ecs_vector_count(table->type) * sizeof(uint16_t);
@@ -113,7 +113,7 @@ void calculate_stage_stats(
         /* ecs_map_memory(stage->type_index, allocd, used); */
     }
     
-    ecs_chunked_memory(stage->tables, allocd, used);
+    ecs_sparse_memory(stage->tables, allocd, used);
     ecs_map_memory(stage->table_index, allocd, used);
 
     if (!is_main_stage) {
@@ -186,7 +186,7 @@ void get_memory_stats(
     calculate_stage_stats(world, &world->temp_stage, &memory->stage.allocd, &memory->stage.used);
     calculate_stages_stats(world, &memory->stage.allocd, &memory->stage.used);
 
-    ecs_chunked_memory(world->entity_index, &memory->entities.allocd, &memory->entities.used);
+    ecs_sparse_memory(world->entity_index, &memory->entities.allocd, &memory->entities.used);
 
     ecs_vector_memory(world->worker_threads, &table_arr_params, &memory->world.allocd, &memory->world.used);
     stats->memory.world.allocd += sizeof(ecs_world_t) - sizeof(ecs_stage_t);
@@ -378,11 +378,11 @@ void collect_comp_stats(
     uint32_t *memory_allocd,
     uint32_t *memory_used)
 {
-    ecs_chunked_t *tables = world->main_stage.tables;
-    uint32_t i, count = ecs_chunked_count(world->main_stage.tables);
+    ecs_sparse_t *tables = world->main_stage.tables;
+    uint32_t i, count = ecs_sparse_count(world->main_stage.tables);
 
     for (i = 0; i < count; i ++) {
-        ecs_table_t *table = ecs_chunked_get(tables, ecs_table_t, i);
+        ecs_table_t *table = ecs_sparse_get(tables, ecs_table_t, i);
         ecs_entity_t *components = ecs_vector_first(table->type);
 
         uint32_t c, c_count = ecs_vector_count(table->type);
@@ -409,7 +409,7 @@ void ecs_get_stats(
     collect_comp_stats(world, stats, &mem_allocd, &mem_used);
 
     stats->component_count = ecs_vector_count(stats->components);
-    stats->table_count = ecs_chunked_count(world->main_stage.tables);
+    stats->table_count = ecs_sparse_count(world->main_stage.tables);
 
     if (!stats->features) {
         stats->features = ecs_vector_new(&featurestats_arr_params, 0);
@@ -501,7 +501,7 @@ void ecs_get_stats(
     stats->memory.families.used += type_memory;
     stats->memory.families.allocd += type_memory; */
 
-    stats->entity_count = ecs_chunked_count(world->entity_index);
+    stats->entity_count = ecs_sparse_count(world->entity_index);
     stats->tick_count = world->tick;
 
     if (world->tick) {

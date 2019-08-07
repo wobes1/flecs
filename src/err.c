@@ -107,6 +107,8 @@ const char* ecs_strerror(
         return "type contains too many entities";
     case ECS_INVALID_PREFAB_CHILD_TYPE:
         return "a prefab child type must have at least one INSTANCEOF element";
+    case ECS_UNINITIALIZED_READ:
+        return "uninitialized read detected";
     }
 
     return "unknown error code";

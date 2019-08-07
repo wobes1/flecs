@@ -25,7 +25,7 @@ struct ecs_bucket_t {
 };
 
 struct ecs_map_t {
-    ecs_chunked_t *buckets;
+    ecs_sparse_t *buckets;
     uint32_t payload_size;
     uint32_t bucket_size;
     uint32_t bucket_count;
@@ -67,7 +67,7 @@ ecs_bucket_t* find_bucket(
     const ecs_map_t *map,
     ecs_map_key_t key)
 {
-    ecs_chunked_t *buckets = map->buckets;
+    ecs_sparse_t *buckets = map->buckets;
     uint32_t bucket_count = map->bucket_count;
     if (!bucket_count) {
         return NULL;
@@ -75,7 +75,7 @@ ecs_bucket_t* find_bucket(
 
     uint32_t bucket_id = get_bucket_id(bucket_count, key);
 
-    return _ecs_chunked_get_sparse(buckets, 0, bucket_id);
+    return _ecs_sparse_get_sparse(buckets, 0, bucket_id);
 }
 
 static
@@ -83,18 +83,18 @@ ecs_bucket_t* find_or_create_bucket(
     ecs_map_t *map,
     ecs_map_key_t key)
 {
-    ecs_chunked_t *buckets = map->buckets;
+    ecs_sparse_t *buckets = map->buckets;
     uint32_t bucket_count = map->bucket_count;
 
     if (!bucket_count) {
-        ecs_chunked_set_size(buckets, 8);
+        ecs_sparse_set_size(buckets, 8);
         bucket_count = 8;
     }
 
     uint32_t bucket_id = get_bucket_id(bucket_count, key);
     
     bool is_new = false;
-    ecs_bucket_t *bucket = _ecs_chunked_get_or_set_sparse(
+    ecs_bucket_t *bucket = _ecs_sparse_get_or_set_sparse(
         buckets, 0, bucket_id, &is_new);
 
     if (is_new) {
@@ -111,7 +111,7 @@ void remove_bucket(
 {
     uint32_t bucket_count = map->bucket_count;
     uint32_t bucket_id = get_bucket_id(bucket_count, key);
-    _ecs_chunked_remove(map->buckets, 0, bucket_id);
+    _ecs_sparse_remove(map->buckets, 0, bucket_id);
 }
 
 static
@@ -166,22 +166,22 @@ void rehash(
     do {
         rehash_again = false;
 
-        ecs_chunked_t *buckets = map->buckets;
+        ecs_sparse_t *buckets = map->buckets;
         uint32_t payload_size = map->payload_size;
 
-        ecs_chunked_set_size(buckets, bucket_count);
+        ecs_sparse_set_size(buckets, bucket_count);
         map->bucket_count = bucket_count;
 
         /* Only iterate over old buckets with elements */
-        int32_t b, filled_bucket_count = ecs_chunked_count(buckets);
-        const uint32_t *indices = ecs_chunked_indices(buckets);
+        int32_t b, filled_bucket_count = ecs_sparse_count(buckets);
+        const uint32_t *indices = ecs_sparse_indices(buckets);
 
         /* Iterate backwards as elements could otherwise be moved to existing
          * buckets which could temporarily cause the number of elements in a
          * bucket to exceed BUCKET_COUNT. */
         for (b = filled_bucket_count - 1; b >= 0; b --) {
             uint32_t bucket_id = indices[b];
-            ecs_bucket_t *bucket = _ecs_chunked_get_sparse(buckets, 0, bucket_id);
+            ecs_bucket_t *bucket = _ecs_sparse_get_sparse(buckets, 0, bucket_id);
 
             int i, count = bucket->count;
             ecs_map_key_t *array = PAYLOAD_ARRAY(bucket);
@@ -193,12 +193,12 @@ void rehash(
 
                 if (new_bucket_id != bucket_id) {
                     bool is_new = false;
-                    ecs_bucket_t *new_bucket = _ecs_chunked_get_or_set_sparse(
+                    ecs_bucket_t *new_bucket = _ecs_sparse_get_or_set_sparse(
                         buckets, 0, new_bucket_id, &is_new);
 
                     if (is_new) {
                         new_bucket->count = 0;
-                        indices = ecs_chunked_indices(buckets);
+                        indices = ecs_sparse_indices(buckets);
                     }
 
                     if (add_to_bucket(
@@ -232,7 +232,7 @@ ecs_map_t* _ecs_map_new(
     result->count = 0;
     result->payload_size = payload_size;
     result->bucket_count = bucket_count;
-    result->buckets = _ecs_chunked_new(BUCKET_SIZE(payload_size), bucket_count);
+    result->buckets = _ecs_sparse_new(BUCKET_SIZE(payload_size), bucket_count);
 
     return result;
 }
@@ -241,7 +241,7 @@ void ecs_map_free(
     ecs_map_t *map)
 {
     if (map) {
-        ecs_chunked_free(map->buckets);
+        ecs_sparse_free(map->buckets);
         free(map);
     }
 }
@@ -397,7 +397,7 @@ void ecs_map_clear(
     ecs_map_t *map)
 {
     ecs_assert(map != NULL, ECS_INVALID_PARAMETER, NULL);
-    ecs_chunked_clear(map->buckets);
+    ecs_sparse_clear(map->buckets);
     map->count = 0;
 }
 
@@ -430,9 +430,9 @@ void* _ecs_map_next(
     do {
         if (!bucket) {
             uint32_t bucket_index = iter->bucket_index;
-            ecs_chunked_t *buckets = map->buckets;
-            if (bucket_index < ecs_chunked_count(buckets)) {
-                bucket = _ecs_chunked_get(buckets, 0, bucket_index);
+            ecs_sparse_t *buckets = map->buckets;
+            if (bucket_index < ecs_sparse_count(buckets)) {
+                bucket = _ecs_sparse_get(buckets, 0, bucket_index);
                 iter->bucket = bucket;
 
                 element_index = 0;
@@ -499,7 +499,7 @@ void ecs_map_memory(
     uint32_t *used)
 {
     ecs_assert(map != NULL, ECS_INVALID_PARAMETER, NULL);
-    ecs_chunked_memory(map->buckets, allocd, NULL);
+    ecs_sparse_memory(map->buckets, allocd, NULL);
 
     if (used) {
         *used = map->count * ELEM_SIZE(map->payload_size);

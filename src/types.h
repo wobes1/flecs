@@ -56,7 +56,7 @@
 /** Metadata of an explicitly created type (ECS_TYPE or ecs_new_type) */
 typedef struct EcsTypeComponent {
     ecs_type_t type;    /* Preserved nested families */
-    ecs_type_t resolved;  /* Resolved nested families */
+    ecs_type_t normalized;  /* Resolved nested families */
 } EcsTypeComponent;
 
 /* For prefabs with child entities, the parent prefab must be marked so that
@@ -91,6 +91,60 @@ typedef struct EcsPrefabBuilder {
     ecs_vector_t *ops; /* ecs_builder_op_t */
 } EcsPrefabBuilder;
 
+
+/* -- Entity storage -- */
+
+#define EcsTableIsStaged  (1)
+#define EcsTableIsPrefab (2)
+#define EcsTableHasPrefab (4)
+
+/** A single column in a table */
+typedef struct ecs_column_t {
+    ecs_vector_t *data;              /* Column data */
+    uint16_t size;                   /* Column size (saves component lookups) */
+} ecs_column_t;
+
+/* A table stores component data. Tables are stored in a graph that is traversed
+ * when adding/removing components. */
+typedef struct ecs_table_t {
+    ecs_type_t type;                  /* Type containing component ids */
+    ecs_column_t *columns;            /* Columns storing components of array */
+
+    ecs_sparse_t *edges;             /* Edges to other tables */
+
+    ecs_vector_t *on_frame;           /* Column systems matched with table */
+    ecs_vector_t *on_new;             /* Systems executed when new entity is
+                                       * created in this table. */
+
+    uint32_t flags;                   /* Flags for testing table properties */
+} ecs_table_t;
+
+/* A record contains the table and row at which the entity is stored. */
+typedef struct ecs_record_t {
+    ecs_table_t *table;           /* The type of the entity */
+    int32_t row;                  /* Row at which the entity is stored */
+} ecs_record_t;
+
+
+/* -- Components -- */
+
+/** Component-specific data */
+typedef struct ecs_component_data_t {
+    ecs_vector_t *on_add;       /* Systems ran after adding this component */
+    ecs_vector_t *on_remove;    /* Systems ran after removing this component */
+    ecs_vector_t *on_set;       /* Systems ran after setting this component */
+
+    ecs_init_t init;            /* Invoked for new uninitialized component */
+    ecs_init_t fini;            /* Invoked when component is deinitialized */
+    ecs_replace_t replace;      /* Invoked when component value is replaced */
+    ecs_merge_t merge;          /* Invoked when component value is merged */
+
+    void *ctx;
+} ecs_component_data_t;
+
+
+/* -- Systems -- */
+
 /** Type that is used by systems to indicate where to fetch a component from */
 typedef enum ecs_system_expr_elem_kind_t {
     EcsFromSelf,            /* Get component from self (default) */
@@ -120,35 +174,6 @@ typedef int (*ecs_parse_action_t)(
     const char *component,
     const char *source,
     void *ctx);
-
-/** Callbacks for component lifecycle events */
-typedef struct ecs_lifecycle_t {
-    ecs_component_init_t init;
-    ecs_component_deinit_t deinit;
-    ecs_component_replace_t replace;
-    ecs_component_merge_t merge;
-} ecs_lifecycle_t;
-
-/** A table column describes a single column in a table (archetype) */
-typedef struct ecs_column_t {
-    ecs_vector_t *data;              /* Column data */
-    uint16_t size;                   /* Column size (saves component lookups) */
-} ecs_column_t;
-
-#define EcsTableIsStaged  (1)
-#define EcsTableIsPrefab (2)
-#define EcsTableHasPrefab (4)
-
-/** A table is the Flecs equivalent of an archetype. Tables store all entities
- * with a specific set of components. Tables are automatically created when an
- * entity has a set of components not previously observed before. When a new
- * table is created, it is automatically matched with existing column systems */
-typedef struct ecs_table_t {
-    ecs_column_t *columns;      /* Columns storing components of array */
-    ecs_vector_t *frame_systems;      /* Frame systems matched with table */
-    ecs_type_t type;                  /* Identifies table type in type_index */
-    uint32_t flags;                   /* Flags for testing table properties */
- } ecs_table_t;
 
 /** Type that describes a single column in the system signature */
 typedef struct ecs_system_column_t {
@@ -237,9 +262,9 @@ typedef struct EcsColSystem {
     EcsSystem base;
     ecs_entity_t entity;                  /* Entity id of system, used for ordering */
     ecs_vector_t *jobs;                   /* Jobs for this system */
-    ecs_vector_t *tables;                 /* Vector with matched tables */
-    ecs_vector_t *inactive_tables;        /* Inactive tables */
-    ecs_vector_params_t column_params;    /* Parameters for table_columns */
+    ecs_vector_t *tables;                 /* Vector with matched types */
+    ecs_vector_t *inactive_tables;        /* Inactive types */
+    ecs_vector_params_t column_params;    /* Parameters for type_columns */
     ecs_vector_params_t component_params; /* Parameters for components */
     ecs_vector_params_t ref_params;       /* Parameters for refs */
     float period;                         /* Minimum period inbetween system invocations */
@@ -254,47 +279,9 @@ typedef struct EcsRowSystem {
     EcsSystem base;
     ecs_vector_t *components;       /* Components in order of signature */
 } EcsRowSystem;
- 
-/** The ecs_row_t struct is a 64-bit value that describes in which table
- * (identified by a type) is stored, at which index. Entries in the 
- * world::entity_index are of type ecs_row_t. */
-typedef struct ecs_row_t {
-    ecs_table_t *table;            /* The table where the entity is stored */
-    int32_t index;                /* Index of the entity in its table */
-} ecs_row_t;
 
-/** Simple type to represent an entity array on stack */
-typedef struct ecs_entity_array_t {
-    ecs_entity_t *array;
-    int32_t count;
-} ecs_entity_array_t;
 
-#define ECS_TYPE_DB_MAX_CHILD_NODES (256)
-#define ECS_TYPE_DB_BUCKET_COUNT (256)
-
-/** The ecs_type_node_t type is a node in a hierarchical structure that allows
- * for quick lookups of types. A node represents a type, and its direct children
- * represent types with one additional entity. For example, given a node [A],
- * [A, B] would be a child node.
- * 
- * Child nodes are looked up directly using the entity id. For example, node [A]
- * will be stored at root.nodes[A]. Children entity ids are offset by their 
- * parent, such that [A, B] is stored at root.nodes[A].nodes[B - A].
- * 
- * If the offset exceeds ECS_TYPE_DB_MAX_CHILD_NODES, the type will be stored in
- * the types map. This map is keyed by the hash of the type relative to its
- * parent. For example, the hash for type [A, B, C] will be computed on [B, C]
- * if its parent is [A]. */
-typedef struct ecs_type_link_t {
-    ecs_type_t type;                /* type of current node */
-    struct ecs_type_link_t *next;   /* next link (for iterating linearly) */
-} ecs_type_link_t;
-
-typedef struct ecs_type_node_t {
-    ecs_vector_t *nodes;    /* child nodes - <ecs_entity_t, ecs_type_node_t> */
-    ecs_vector_t **types;   /* child types w/large entity offsets - <hash, vector<ecs_type_link_t>> */
-    ecs_type_link_t link;     
-} ecs_type_node_t;
+/* -- Staging -- */
 
 /** A stage is a data structure in which delta's are stored until it is safe to
  * merge those delta's with the main world stage. A stage allows flecs systems
@@ -307,14 +294,6 @@ typedef struct ecs_stage_t {
      * are buffered here */
     ecs_map_t *entity_index;       /* Entity lookup table for (table, row) */
 
-    /* If this is not a thread
-     * stage, these are the same
-     * as the main stage */
-    ecs_type_node_t type_root;     /* Hierarchical type store (& first link) */
-    ecs_type_link_t *last_link;    /* Link to last registered type */
-    ecs_chunked_t *tables;         /* Tables created while >1 threads running */
-    ecs_map_t *table_index;        /* Lookup table by type */
-
     /* These occur only in
      * temporary stages, and
      * not on the main stage */
@@ -325,27 +304,15 @@ typedef struct ecs_stage_t {
      * code knows when entity
      * info is invalidated */
     uint32_t commit_count;
-    ecs_type_t from_type;
-    ecs_type_t to_type;
+    ecs_table_t *from_table;
+    ecs_table_t *to_table;
     
     /* Is entity range checking enabled? */
     bool range_check_enabled;
 } ecs_stage_t;
 
-/** Supporting type that internal functions pass around to ensure that data
- * related to an entity is only looked up once. */
-typedef struct ecs_entity_info_t {
-    ecs_entity_t entity;
-    ecs_type_t type;
-    int32_t index;
-    ecs_table_t *table;
-    ecs_column_t *columns;
-    bool is_watched;
 
-    /* Used for determining if ecs_entity_info_t should be invalidated */
-    ecs_stage_t *stage;
-    uint32_t commit_count;
-} ecs_entity_info_t;
+/* -- Threading -- */
 
 /** A type describing a unit of work to be executed by a worker thread. */ 
 typedef struct ecs_job_t {
@@ -372,6 +339,31 @@ typedef struct ecs_thread_t {
     uint16_t index;                           /* Index of thread */
 } ecs_thread_t;
 
+
+/* -- Utility types -- */
+
+/** Supporting type that internal functions pass around to ensure that data
+ * related to an entity is only looked up once. */
+typedef struct ecs_entity_info_t {
+    ecs_entity_t entity;        /* Entity identifier */
+    ecs_record_t *record;       /* Record in entity index */
+    ecs_table_t *table;         /* Table of entity */
+    ecs_column_t *columns;      /* Columns in which entity data is stored */
+    ecs_type_t type;            /* Type of entity */
+    int32_t row;                /* Row in which the entity is stored */
+    bool is_watched;            /* Is entity being watched */
+} ecs_entity_info_t;
+
+/** Simple array of entities. Used for passing entity arrays when an ecs_type_t
+ * vector would have unnecessary overhead. */
+typedef struct ecs_entity_array_t {
+    ecs_entity_t *array;
+    int32_t count;
+} ecs_entity_array_t;
+
+
+/* -- World -- */
+
 /** The world stores and manages all ECS data. An application can have more than
  * one world, but data is not shared between worlds. */
 struct ecs_world {
@@ -379,8 +371,8 @@ struct ecs_world {
     float delta_time;             /* Time passed to or computed by ecs_progress */
     void *context;                /* Application context */
 
-    /* -- Component lifecycle callbacks */
-    ecs_vector_t *lifecycle_callbacks;
+    /* -- Component data */
+    ecs_vector_t *component_data;
 
     /* -- Column systems -- */
 
@@ -396,13 +388,6 @@ struct ecs_world {
     ecs_vector_t *inactive_systems;   
 
 
-    /* -- Row systems -- */
-
-    ecs_vector_t *add_systems;        /* Systems invoked on ecs_stage_add */
-    ecs_vector_t *remove_systems;     /* Systems invoked on ecs_stage_remove */
-    ecs_vector_t *set_systems;        /* Systems invoked on ecs_set */
-
-
     /* -- Tasks -- */
 
     ecs_vector_t *tasks;              /* Periodic actions not invoked on entities */
@@ -412,16 +397,19 @@ struct ecs_world {
     /* -- Lookup Indices -- */
 
     ecs_map_t *prefab_parent_index;   /* Index to find flag for prefab parent */
-    ecs_map_t *type_sys_add_index;    /* Index to find add row systems for type */
-    ecs_map_t *type_sys_remove_index; /* Index to find remove row systems for type*/
-    ecs_map_t *type_sys_set_index;    /* Index to find set row systems for type */
     ecs_map_t *type_handles;          /* Handles to named families */
+
+
+    /* -- Entity storage -- */
+
+    ecs_sparse_t *entity_index;      /* Entity index of main stage */
+    ecs_record_t singleton;          /* Singleton record is stored separately */
+    ecs_table_t table_root;          /* Root to table graph */
+    ecs_sparse_t *tables;            /* Iterable storage for tables */
 
 
     /* -- Staging -- */
 
-    ecs_row_t singleton_row;         /* Singleton row is stored separately */
-    ecs_chunked_t *entity_index;     /* Entity index of main stage */
     ecs_stage_t main_stage;          /* Main storage */
     ecs_stage_t temp_stage;          /* Stage for when processing systems */
     ecs_vector_t *worker_stages;     /* Stages for worker threads */
@@ -445,11 +433,11 @@ struct ecs_world {
 
     /* -- Handles to builtin components families -- */
 
-    ecs_type_t t_component;
-    ecs_type_t t_type;
-    ecs_type_t t_prefab;
-    ecs_type_t t_row_system;
-    ecs_type_t t_col_system;
+    ecs_table_t *t_component;
+    ecs_table_t *t_type;
+    ecs_table_t *t_prefab;
+    ecs_table_t *t_row_system;
+    ecs_table_t *t_col_system;
 
 
     /* -- Time management -- */
@@ -480,7 +468,7 @@ struct ecs_world {
     bool measure_frame_time;      /* Time spent on each frame */
     bool measure_system_time;     /* Time spent by each system */
     bool should_quit;             /* Did a system signal that app should quit */
-    bool should_match;            /* Should tablea be rematched */
+    bool should_match;            /* Should table be rematched */
     bool should_resolve;          /* If a table reallocd, resolve system refs */
 }; 
 

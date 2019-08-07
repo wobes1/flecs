@@ -33,7 +33,7 @@ ecs_entity_t components_contains(
         if (entity & ECS_CHILDOF) {
             entity &= ECS_ENTITY_MASK;
 
-            ecs_row_t *row = ecs_get_entity(world, NULL, entity);
+            ecs_record_t *row = ecs_get_entity(world, NULL, entity);
             ecs_assert(row != 0, ECS_INTERNAL_ERROR, NULL);
 
             if (row->table) {
@@ -59,7 +59,7 @@ ecs_entity_t ecs_get_entity_for_component(
     ecs_entity_t component)
 {
     if (entity) {
-        ecs_row_t *row = ecs_get_entity(world, NULL, entity);
+        ecs_record_t *row = ecs_get_entity(world, NULL, entity);
         ecs_assert(row != NULL, ECS_INTERNAL_ERROR, NULL);
         type = row->table->type;
     }
@@ -280,8 +280,6 @@ void add_table(
         /* component_data index is not offset by anything */
         table_data->components[c] = component;
     }
-
-    ecs_table_register_system(world, table, system);
 }
 
 /* Remove table */
@@ -479,11 +477,10 @@ void match_tables(
     ecs_entity_t system,
     EcsColSystem *system_data)
 {
-    uint32_t i, count = ecs_chunked_count(world->main_stage.tables);
+    uint32_t i, count = ecs_sparse_count(world->tables);
 
     for (i = 0; i < count; i ++) {
-        ecs_table_t *table = ecs_chunked_get(
-            world->main_stage.tables, ecs_table_t, i);
+        ecs_table_t *table = ecs_sparse_get(world->tables, ecs_table_t, i);
 
         if (match_table(world, table, system, system_data)) {
             add_table(world, system, system_data, table);
@@ -565,12 +562,12 @@ void ecs_rematch_system(
     EcsColSystem *system_data = ecs_get_ptr(world, system, EcsColSystem);
     ecs_assert(system_data != NULL, ECS_INTERNAL_ERROR, 0);
 
-    ecs_chunked_t *tables = world->main_stage.tables;
-    uint32_t i, count = ecs_chunked_count(tables);
+    ecs_sparse_t *tables = world->tables;
+    uint32_t i, count = ecs_sparse_count(tables);
 
     for (i = 0; i < count; i ++) {
         /* Is the system currently matched with the table? */
-        ecs_table_t *table = ecs_chunked_get(tables, ecs_table_t, i);
+        ecs_table_t *table = ecs_sparse_get(tables, ecs_table_t, i);
         int32_t match = table_matched(system_data, system_data->tables, table);
 
         if (match_table(world, table, system, system_data)) {
@@ -732,12 +729,12 @@ ecs_entity_t ecs_new_col_system(
     const char *sig,
     ecs_system_action_t action)
 {
-    uint32_t count = ecs_columns_count(sig);
+    uint32_t count = ecs_signature_columns_count(sig);
 
     ecs_assert(count != 0, ECS_INVALID_PARAMETER, NULL);
 
     ecs_entity_t result = _ecs_new(
-        world, world->t_col_system);
+        world, world->t_col_system->type);
 
     EcsId *id_data = ecs_get_ptr(world, result, EcsId);
     *id_data = id;
@@ -902,7 +899,7 @@ ecs_entity_t _ecs_run_w_filter(
 
         ecs_table_t *world_table = table->table;
         ecs_column_t *table_data = world_table->columns;
-        uint32_t first = 0, count = ecs_table_count(world_table);
+        uint32_t first = 0, count = ecs_column_count(world_table->columns);
 
         if (filter) {
             if (!ecs_type_contains(
