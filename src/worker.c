@@ -102,7 +102,7 @@ void ecs_stop_threads(
     uint32_t i, count = ecs_vector_count(world->worker_threads);
     for (i = 1; i < count; i ++) {
         ecs_os_thread_join(buffer[i].thread);
-        ecs_stage_deinit(world, buffer[i].stage);
+        ecs_stage_fini(world, buffer[i].stage);
     }
 
     ecs_vector_free(world->worker_threads);

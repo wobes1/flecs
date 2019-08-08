@@ -325,19 +325,6 @@ void col_systems_deinit(
 }
 
 static
-void deinit_tables(
-    ecs_world_t *world)
-{
-    ecs_sparse_t *tables = world->tables;
-    uint32_t i, count = ecs_sparse_count(tables);
-
-    for (i = 0; i < count; i ++) {
-        ecs_table_t *table = ecs_sparse_get(tables, ecs_table_t, i);
-        ecs_column_free(world, table, table->columns);
-    }
-}
-
-static
 ecs_entity_t get_prefab_parent_flag(
     ecs_world_t *world,
     ecs_entity_t prefab)
@@ -607,6 +594,18 @@ ecs_world_t *ecs_init(void) {
     return world;
 }
 
+static
+void tables_fini(
+    ecs_world_t *world)
+{
+    uint32_t i, count = ecs_sparse_count(world->tables);
+
+    for (i = 0; i < count; i ++) {
+        ecs_table_t *table = ecs_sparse_get(world->tables, ecs_table_t, i);
+        ecs_table_fini(world, table);
+    }
+}
+
 int ecs_fini(
     ecs_world_t *world)
 {
@@ -626,8 +625,6 @@ int ecs_fini(
         ecs_set_threads(world, 0);
     }
 
-    deinit_tables(world);
-
     col_systems_deinit(world, world->on_update_systems);
     col_systems_deinit(world, world->on_validate_systems);
     col_systems_deinit(world, world->pre_update_systems);
@@ -639,8 +636,10 @@ int ecs_fini(
     col_systems_deinit(world, world->on_demand_systems);
     col_systems_deinit(world, world->inactive_systems);
 
-    ecs_stage_deinit(world, &world->main_stage);
-    ecs_stage_deinit(world, &world->temp_stage);
+    ecs_stage_fini(world, &world->main_stage);
+    ecs_stage_fini(world, &world->temp_stage);
+
+    tables_fini(world);
 
     ecs_sparse_free(world->entity_index);
     ecs_sparse_free(world->tables);

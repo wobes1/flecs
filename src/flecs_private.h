@@ -101,7 +101,7 @@ void ecs_stage_init(
     ecs_stage_t *stage);
 
 /* Deinitialize stage */
-void ecs_stage_deinit(
+void ecs_stage_fini(
     ecs_world_t *world,
     ecs_stage_t *stage);
 
@@ -201,6 +201,10 @@ void ecs_column_free(
     ecs_world_t *world,
     ecs_table_t *table,
     ecs_column_t *columns);
+
+void ecs_table_fini(
+    ecs_world_t *world,
+    ecs_table_t *table);
 
 /* Insert row into columns */
 uint32_t ecs_columns_insert(

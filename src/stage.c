@@ -62,7 +62,7 @@ void ecs_stage_init(
     stage->range_check_enabled = true;
 }
 
-void ecs_stage_deinit(
+void ecs_stage_fini(
     ecs_world_t *world,
     ecs_stage_t *stage)
 {

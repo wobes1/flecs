@@ -98,26 +98,33 @@ typedef struct EcsPrefabBuilder {
 #define EcsTableIsPrefab (2)
 #define EcsTableHasPrefab (4)
 
+typedef struct ecs_table_t ecs_table_t;
+
 /** A single column in a table */
 typedef struct ecs_column_t {
     ecs_vector_t *data;              /* Column data */
     uint16_t size;                   /* Column size (saves component lookups) */
 } ecs_column_t;
 
+typedef struct ecs_edge_t {
+    ecs_table_t *add;
+    ecs_table_t *remove;
+} ecs_edge_t;
+
 /* A table stores component data. Tables are stored in a graph that is traversed
  * when adding/removing components. */
-typedef struct ecs_table_t {
+struct ecs_table_t {
     ecs_type_t type;                  /* Type containing component ids */
     ecs_column_t *columns;            /* Columns storing components of array */
 
-    ecs_sparse_t *edges;             /* Edges to other tables */
+    ecs_edge_t *edges;                /* Edges to other tables */
 
     ecs_vector_t *on_frame;           /* Column systems matched with table */
     ecs_vector_t *on_new;             /* Systems executed when new entity is
                                        * created in this table. */
 
     uint32_t flags;                   /* Flags for testing table properties */
-} ecs_table_t;
+};
 
 /* A record contains the table and row at which the entity is stored. */
 typedef struct ecs_record_t {

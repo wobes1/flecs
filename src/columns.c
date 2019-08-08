@@ -50,7 +50,17 @@ void ecs_column_free(
     ecs_table_t *table,
     ecs_column_t *columns)
 {
-    // TODO
+    if (!columns) {
+        return;
+    }
+    
+    uint32_t i, count = ecs_vector_count(table->type);
+
+    for (i = 0; i < count; i ++) {
+        ecs_vector_free(columns[i].data);
+    }
+
+    free(columns);
 }
 
 uint32_t ecs_columns_insert(
