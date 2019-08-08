@@ -29,8 +29,7 @@ void init_table(
     table->type = entities_to_type(entities);
     table->columns = NULL;
     
-    table->edges = ecs_sparse_new(ecs_edge_t, ECS_MAX_COMPONENTS);
-    
+    table->edges = ecs_sparse_new(ecs_edge_t, ECS_MAX_COMPONENTS);    
     table->on_frame = NULL;
     table->on_new = NULL;
 
@@ -67,7 +66,7 @@ ecs_table_t *find_or_create_table_include(
     ecs_world_t *world,
     ecs_stage_t *stage,
     ecs_table_t *node,
-    ecs_entity_t e)
+    ecs_entity_t add)
 {
     ecs_type_t type = node->type;
     uint32_t count = ecs_vector_count(type);
@@ -81,19 +80,24 @@ ecs_table_t *find_or_create_table_include(
 
     int i, el = 0;
     for (i = 0; i < count; i ++) {
-        if (array[i] > e && !added) {
-            entities.array[el ++] = e;
+        ecs_entity_t e = array[i];
+        if (e > add && !added) {
+            entities.array[el ++] = add;
             added = true;
         }
         
         entities.array[el ++] = e;
     }
 
+    if (!added) {
+        entities.array[el] = add;
+    }
+
     ecs_table_t *result = ecs_table_find_or_create(world, stage, &entities);
 
     /* Create remove edge to previous node */
     ecs_edge_t *edge = ecs_sparse_get_or_set_sparse(
-            result->edges, ecs_edge_t, e, NULL);
+            result->edges, ecs_edge_t, add, NULL);
 
     edge->add = NULL;
     edge->remove = node;
@@ -106,7 +110,7 @@ ecs_table_t *find_or_create_table_exclude(
     ecs_world_t *world,
     ecs_stage_t *stage,
     ecs_table_t *node,
-    ecs_entity_t e)
+    ecs_entity_t remove)
 {
     ecs_type_t type = node->type;
     uint32_t count = ecs_vector_count(type);
@@ -119,7 +123,8 @@ ecs_table_t *find_or_create_table_exclude(
 
     int i, el = 0;
     for (i = 0; i < count; i ++) {
-        if (array[i] != e) {
+        ecs_entity_t e = array[i];
+        if (e != remove) {
             entities.array[el ++] = e;
             ecs_assert(el < count, ECS_INTERNAL_ERROR, NULL);
         }
@@ -129,7 +134,7 @@ ecs_table_t *find_or_create_table_exclude(
 
     /* Create add edge to previous node */
     ecs_edge_t *edge = ecs_sparse_get_or_set_sparse(
-            result->edges, ecs_edge_t, e, NULL);
+            result->edges, ecs_edge_t, remove, NULL);
 
     edge->add = node;
     edge->remove = NULL;
@@ -261,9 +266,13 @@ ecs_table_t *ecs_table_traverse(
             ecs_table_t *next = edge->add;
 
             if (is_new || !next) {
-                /* Find table with all components of node including 'e' */
-                edge->add = find_or_create_table_include(world, stage, node, e);
+                /* Initialize new element */
+                edge->add = NULL; 
                 edge->remove = NULL;
+
+                /* Find table with all components of node including 'e' */
+                next = find_or_create_table_include(world, stage, node, e);
+                edge->add = next;
             } else if (next == node) {
                 /* If edge points to self, the current table already has this
                  * component. */

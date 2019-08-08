@@ -642,6 +642,9 @@ int ecs_fini(
     ecs_stage_deinit(world, &world->main_stage);
     ecs_stage_deinit(world, &world->temp_stage);
 
+    ecs_sparse_free(world->entity_index);
+    ecs_sparse_free(world->tables);
+
     ecs_vector_free(world->on_update_systems);
     ecs_vector_free(world->on_validate_systems);
     ecs_vector_free(world->pre_update_systems);
