@@ -2048,9 +2048,7 @@ void _ecs_assert(
 #define ECS_SYSTEM(world, id, kind, ...) \
     ecs_entity_t F##id = ecs_new_system(world, #id, kind, #__VA_ARGS__, id);\
     ecs_entity_t id = F##id;\
-    ECS_TYPE_VAR(id) = ecs_type_from_entity(world, id);\
     (void)id;\
-    (void)ecs_type(id);
 
 #endif
 
