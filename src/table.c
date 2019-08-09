@@ -129,7 +129,10 @@ ecs_table_t *find_or_create_table_exclude(
         }
     }
 
-    ecs_table_t *result = ecs_table_find_or_create(world, stage, &entities);    
+    ecs_table_t *result = ecs_table_find_or_create(world, stage, &entities);
+    if (!result) {
+        return result;
+    }
 
     /* Create add edge to previous node */
     ecs_edge_t *edge = &result->edges[remove];
@@ -175,6 +178,9 @@ ecs_table_t *ecs_table_find_or_create(
 
         for (i = 0; i < count; i ++) {
             ecs_entity_t e = array[i];
+
+            ecs_assert(e < ECS_MAX_COMPONENTS, ECS_INTERNAL_ERROR, NULL);
+
             ecs_edge_t *edge = &table->edges[e];
             table = edge->add;
             if (!table) {
@@ -227,7 +233,10 @@ ecs_table_t *ecs_table_traverse(
                 if (edge->add == node) {
                     /* Find table with all components of node except 'e' */
                     next = find_or_create_table_exclude(world, stage, node, e);
-                    ecs_assert(next != NULL, ECS_INTERNAL_ERROR, NULL);
+                    if (!next) {
+                        return NULL;
+                    }
+
                     edge->remove = next;
                 } else {
                     /* If the add edge does not point to self, the table

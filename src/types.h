@@ -306,13 +306,6 @@ typedef struct ecs_stage_t {
      * not on the main stage */
     ecs_map_t *data_stage;         /* Arrays with staged component values */
     ecs_map_t *remove_merge;       /* All removed components before merge */
-
-    /* Keep track of changes so
-     * code knows when entity
-     * info is invalidated */
-    uint32_t commit_count;
-    ecs_table_t *from_table;
-    ecs_table_t *to_table;
     
     /* Is entity range checking enabled? */
     bool range_check_enabled;

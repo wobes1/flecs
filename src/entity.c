@@ -987,22 +987,21 @@ ecs_entity_t _ecs_new(
     ecs_type_t type)
 {
     ecs_assert(world != NULL, ECS_INVALID_PARAMETER, NULL);
-
     ecs_stage_t *stage = ecs_get_stage(&world);
 
-    ecs_assert(!world->is_merging, ECS_INVALID_WHILE_MERGING, NULL);
-
     ecs_entity_t entity = ++ world->last_handle;
-
     ecs_assert(!world->max_handle || entity <= world->max_handle, 
         ECS_OUT_OF_RANGE, NULL);
 
     if (type) {
-        ecs_entity_info_t info = {
-            .entity = entity
+        ecs_entity_array_t entities = {
+            .array = ecs_vector_first(type),
+            .count = ecs_vector_count(type)
         };
 
-        commit(world, stage, &info, type, 0, true);
+        ecs_table_t *table = ecs_table_find_or_create(world, stage, &entities);
+
+        new_entity(world, stage, entity, NULL, table, &entities);
     }
 
     return entity;

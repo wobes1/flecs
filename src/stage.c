@@ -56,9 +56,6 @@ void ecs_stage_init(
         stage->remove_merge = ecs_map_new(ecs_type_t, 0);
     }
 
-    stage->commit_count = 0;
-    stage->to_table = 0;
-    stage->from_table = 0;
     stage->range_check_enabled = true;
 }
 
