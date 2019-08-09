@@ -497,7 +497,7 @@ void run_component_actions(
         if (!type) {
             type = table->type;
             type_count = ecs_vector_count(type);
-            *type_array = ecs_vector_first(type);
+            type_array = ecs_vector_first(type);
         }
 
         /* Find column index of current component */
@@ -535,6 +535,99 @@ void run_component_actions(
     }
 }
 
+static
+uint32_t new_entity(
+    ecs_world_t *world,
+    ecs_stage_t *stage,
+    ecs_entity_t entity,
+    ecs_record_t *record,
+    ecs_table_t *new_table,
+    ecs_entity_array_t *added)
+{
+    ecs_column_t *new_columns = get_columns(world, stage, new_table);
+    int32_t new_row = ecs_columns_insert(world, new_table, new_columns, entity);
+
+    if (record) {
+        record->table = new_table;
+        record->row = new_row;
+    } else {
+        ecs_set_entity(world, stage, entity, &(ecs_record_t){
+            .table = new_table,
+            .row = new_row
+        });
+    }
+
+    if (added) {
+        run_component_actions(
+            world, stage, new_table, new_columns, new_row, *added, true);
+    }
+
+    return new_row;
+}
+
+static
+uint32_t move_entity(
+    ecs_world_t *world,
+    ecs_stage_t *stage,
+    ecs_entity_t entity,
+    ecs_record_t *record,
+    ecs_table_t *old_table,
+    ecs_column_t *old_columns,
+    int32_t old_row,
+    ecs_table_t *new_table,
+    ecs_entity_array_t *added,
+    ecs_entity_array_t *removed)
+{
+    ecs_column_t *new_columns = get_columns(world, stage, new_table);
+    int32_t new_row = ecs_columns_insert(world, new_table, new_columns, entity);
+
+    copy_row(new_table->type, new_columns, new_row, 
+        old_table->type, old_columns, old_row);
+
+    if (removed) {
+        run_component_actions(
+            world, stage, old_table, old_columns, old_row, *removed, false);
+    }
+
+    ecs_columns_delete(world, stage, old_table, old_columns, old_row);
+
+    if (record) {
+        record->table = new_table;
+        record->row = new_row;
+    } else {
+        ecs_set_entity(world, stage, entity, &(ecs_record_t){
+            .table = new_table,
+            .row = new_row
+        });
+    }
+
+    if (added) {
+        run_component_actions(
+            world, stage, new_table, new_columns, new_row, *added, true);
+    }
+
+    return new_row;
+}
+
+static
+void delete_entity(
+    ecs_world_t *world,
+    ecs_stage_t *stage,
+    ecs_entity_t entity,
+    ecs_table_t *old_table,
+    ecs_column_t *old_columns,
+    int32_t old_row,
+    ecs_entity_array_t *removed)
+{
+    if (removed) {
+        run_component_actions(
+            world, stage, old_table, old_columns, old_row, *removed, false);
+    }
+
+    ecs_columns_delete(world, stage, old_table, old_columns, old_row);
+    ecs_delete_entity(world, stage, entity);
+}
+
 /** Commit an entity with a specified type to a table (probably the most 
  * important function in flecs). */
 static
@@ -547,9 +640,7 @@ uint32_t commit(
     bool do_set)
 {
     ecs_table_t *new_table = NULL, *old_table;
-    ecs_type_t old_type = info->type;
-    ecs_column_t *old_columns = NULL, *new_columns = NULL;
-    int32_t new_row = 0, old_row = 0;
+    int32_t new_row = 0;
     bool in_progress = world->in_progress;
     ecs_entity_t entity = info->entity;
     ecs_type_t last_remove_type = NULL;
@@ -557,7 +648,6 @@ uint32_t commit(
     if (in_progress) {
         ecs_map_t *remove_merge_map = stage->remove_merge;
 
-        /* Update remove type. Add to_remove, and subtract to_add. */
         ecs_type_t *rm_type_ptr = ecs_map_get(
                 remove_merge_map, ecs_type_t, entity);
         last_remove_type = rm_type_ptr ? *rm_type_ptr : NULL;
@@ -577,6 +667,7 @@ uint32_t commit(
     /* Keep track of components that are actually added/removed */
     ecs_entity_array_t to_add_array, to_remove_array, added, removed;
     ecs_entity_array_t *to_add_ptr = NULL, *to_remove_ptr = NULL;
+    ecs_entity_array_t *added_ptr = NULL, *removed_ptr = NULL;
 
     if (to_add) {
         int32_t to_add_count = ecs_vector_count(to_add);
@@ -587,6 +678,7 @@ uint32_t commit(
         };
 
         to_add_ptr = &to_add_array;
+        added_ptr = &added;
 
         added.array = ecs_os_alloca(ecs_entity_t, to_add_count);
         added.count = 0;
@@ -604,61 +696,33 @@ uint32_t commit(
             };
 
             to_remove_ptr = &to_remove_array;
+            removed_ptr = &removed;            
 
             removed.array = ecs_os_alloca(ecs_entity_t, to_remove_count);
-            removed.count = 0;        
+            removed.count = 0;
+
+            new_table = ecs_table_traverse(
+                world, stage, old_table, to_add_ptr, to_remove_ptr, &added, &removed);
+        } else {
+            new_table = ecs_table_traverse(
+                world, stage, old_table, to_add_ptr, NULL, &added, NULL);
         }
 
-        new_table = ecs_table_traverse(
-            world, stage, old_table, to_add_ptr, to_remove_ptr, &added, &removed);
+        if (new_table) {
+            new_row = move_entity(
+                world, stage, entity, info->record, old_table, info->columns, info->row, 
+                new_table, added_ptr, removed_ptr);
+        } else {
+            delete_entity(
+                world, stage, entity, old_table, info->columns, info->row, 
+                removed_ptr);
+        }            
     } else {
         new_table = ecs_table_find_or_create(world, stage, to_add_ptr);
-    }
 
-    /* If the entity moved, copy components from the old table into the new
-     * table, and update the entity index. */
-    if (new_table && new_table != old_table) {
-        new_columns = get_columns(world, stage, new_table);
-        new_row = ecs_columns_insert(world, new_table, new_columns, entity);
-    }
-    
-    /* If the entity didn't move, there is no need to copy components or 
-     * update the entity index. We may need to invoke OnAdd/OnRemove systems
-     * if the same component was both added and removed. */
-
-    if (old_table) {
-        uint32_t old_row = info->row;        
-        old_columns = info->columns;
-
-        copy_row(new_table->type, new_columns, new_row, 
-            old_type, old_columns, old_row);
-
-        /* Execute OnRemove systems & fini callback */
-        if (to_remove_ptr) {
-            run_component_actions(
-                world, stage, old_table, old_columns, old_row, removed, false);
-
-            /* Remove row from old columns */
-            ecs_columns_delete(world, stage, old_table, old_columns, old_row);
-        }                
-    }
-
-    /* Update entity index */
-    ecs_record_t *record = info->record;
-    if (record) {
-        record->table = new_table;
-        record->row = new_row;
-    } else {
-        ecs_set_entity(world, stage, entity, &(ecs_record_t){
-            .table = new_table,
-            .row = new_row
-        });
-    }
- 
-    /* Execute init callback and OnRemove systems */
-    if (to_add_ptr) {
-        run_component_actions(
-            world, stage, new_table, new_columns, new_row, added, true);
+        if (new_table) {
+            new_row = new_entity(world, stage, entity, info->record, new_table, added_ptr);
+        }        
     }
 
     if (!in_progress) {
@@ -684,14 +748,6 @@ uint32_t commit(
     if (info->is_watched) {
         world->should_match = true;
     }
-
-    info->type = new_table->type;
-    info->row = new_row;
-    info->table = new_table;
-    info->columns = new_columns;
-
-    /* This is a crude way to signal to the world that we need to redetermine
-     * the schedule for the worker threads */
 
     return new_row;
 }
@@ -1075,20 +1131,14 @@ void ecs_delete(
 
     if (!in_progress) {
         if ((row = ecs_get_entity(world, NULL, entity))) {
-            ecs_type_t type = NULL;
             ecs_table_t *table = row->table;
-            if (table) {
-                type = table->type;
-                ecs_entity_info_t info = {
-                    .entity = entity,
-                    .type = type,
-                    .row = row->row,
-                    .table = table
-                };   
-                commit(world, stage, &info, 0, type, false);
-            }
+            ecs_entity_array_t removed = {
+                .array = ecs_vector_first(table->type),
+                .count = ecs_vector_count(table->type)
+            };
 
-            ecs_delete_entity(world, NULL, entity); 
+            delete_entity(world, stage, entity, table, table->columns, row->row, 
+                &removed);
         }
     } else {
         /* Mark components of the entity in the main stage as removed. This will

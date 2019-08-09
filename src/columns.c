@@ -10,6 +10,10 @@ ecs_column_t* ecs_columns_new(
 {
     ecs_type_t type = table->type;
 
+    if (!type) {
+        return NULL;
+    }
+
     ecs_column_t *result = ecs_os_calloc(
         sizeof(ecs_column_t), ecs_vector_count(type) + 1);
 

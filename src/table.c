@@ -4,11 +4,15 @@ static
 ecs_type_t entities_to_type(
     ecs_entity_array_t *entities)
 {
-    ecs_vector_t *result = NULL;
-    ecs_vector_set_count(&result, &handle_arr_params, entities->count);
-    ecs_entity_t *array = ecs_vector_first(result);
-    memcpy(array, entities->array, sizeof(ecs_entity_t) * entities->count);
-    return result;
+    if (entities->count) {
+        ecs_vector_t *result = NULL;
+        ecs_vector_set_count(&result, &handle_arr_params, entities->count);
+        ecs_entity_t *array = ecs_vector_first(result);
+        memcpy(array, entities->array, sizeof(ecs_entity_t) * entities->count);
+        return result;
+    } else {
+        return NULL;
+    }
 }
 
 static
@@ -187,7 +191,7 @@ ecs_table_t *ecs_table_find_or_create(
         
         return table;
     } else {
-        return &world->table_root;
+        return NULL;
     }
 }
 
@@ -251,6 +255,7 @@ ecs_table_t *ecs_table_traverse(
 
             if (!next) {
                 next = edge->add = find_or_create_table_include(world, stage, node, e);
+                ecs_assert(next != NULL, ECS_INTERNAL_ERROR, NULL);
             }
 
             if (added) added->array[added->count ++] = e;
@@ -260,6 +265,10 @@ ecs_table_t *ecs_table_traverse(
     }
 
     ecs_assert(node != NULL, ECS_INTERNAL_ERROR, NULL);
+
+    if (node == &world->table_root) {
+        node = NULL;
+    }
 
     return node;
 }
