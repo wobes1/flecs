@@ -317,7 +317,7 @@ void col_systems_deinit(
 
     for (i = 0; i < count; i ++) {
         EcsColSystem *ptr = ecs_get_ptr(world, buffer[i], EcsColSystem);
-        ecs_vector_free(ptr->base.columns);
+        ecs_vector_free(ptr->base.sig.columns);
         ecs_vector_free(ptr->jobs);
         ecs_vector_free(ptr->tables);
         ecs_vector_free(ptr->inactive_tables);
@@ -588,8 +588,8 @@ ecs_world_t *ecs_init(void) {
     world->max_handle = 0;
 
     /* Create builtin systems for managing prefab hierarchies */
-    ecs_new_system(world, "EcsInitPrefab", EcsOnAdd, "EcsPrefab", EcsInitPrefab);
-    ecs_new_system(world, "EcsSetPrefab", EcsOnSet, "EcsPrefab", EcsSetPrefab);
+    ecs_new_system(world, "EcsInitPrefab", EcsOnAdd, ecs_parse_signature(world, "EcsPrefab"), EcsInitPrefab);
+    ecs_new_system(world, "EcsSetPrefab", EcsOnSet, ecs_parse_signature(world, "EcsPrefab"), EcsSetPrefab);
 
     return world;
 }

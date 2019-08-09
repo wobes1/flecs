@@ -5,7 +5,7 @@ const ecs_vector_params_t matched_table_params = {
 };
 
 const ecs_vector_params_t system_column_params = {
-    .element_size = sizeof(ecs_system_column_t)
+    .element_size = sizeof(ecs_signature_column_t)
 };
 
 const ecs_vector_params_t reference_params = {
@@ -90,7 +90,7 @@ void add_table(
 {
     ecs_matched_table_t *table_data;
     ecs_type_t table_type = table->type;
-    uint32_t column_count = ecs_vector_count(system_data->base.columns);
+    uint32_t column_count = ecs_vector_count(system_data->base.sig.columns);
 
     /* Initially always add table to inactive group. If the system is registered
      * with the table and the table is not empty, the table will send an
@@ -108,53 +108,53 @@ void add_table(
     table_data->components = ecs_os_malloc(sizeof(ecs_entity_t) * column_count);
 
     /* Walk columns parsed from the system signature */
-    ecs_system_column_t *columns = ecs_vector_first(system_data->base.columns);
-    uint32_t c, count = ecs_vector_count(system_data->base.columns);
+    ecs_signature_column_t *columns = ecs_vector_first(system_data->base.sig.columns);
+    uint32_t c, count = ecs_vector_count(system_data->base.sig.columns);
 
     for (c = 0; c < count; c ++) {
-        ecs_system_column_t *column = &columns[c];
+        ecs_signature_column_t *column = &columns[c];
         ecs_entity_t entity = 0, component = 0;
-        ecs_system_expr_elem_kind_t kind = column->kind;
-        ecs_system_expr_oper_kind_t oper_kind = column->oper_kind;
+        ecs_signature_from_kind_t from = column->from;
+        ecs_signature_op_kind_t op = column->op;
 
         /* NOT operators are converted to EcsFromEmpty */
-        ecs_assert(oper_kind != EcsOperNot || kind == EcsFromEmpty, 
+        ecs_assert(op != EcsOperNot || from == EcsFromEmpty, 
             ECS_INTERNAL_ERROR, NULL);
 
         /* Column that retrieves data from self or a fixed entity */
-        if (kind == EcsFromSelf || kind == EcsFromEntity || 
-            kind == EcsFromOwned || kind == EcsFromShared) 
+        if (from == EcsFromSelf || from == EcsFromEntity || 
+            from == EcsFromOwned || from == EcsFromShared) 
         {
-            if (oper_kind == EcsOperAnd) {
+            if (op == EcsOperAnd) {
                 component = column->is.component;
-            } else if (oper_kind == EcsOperOptional) {
+            } else if (op == EcsOperOptional) {
                 component = column->is.component;
-            } else if (oper_kind == EcsOperOr) {
+            } else if (op == EcsOperOr) {
                 component = ecs_type_contains(
                     world, table_type, column->is.type, 
                     false, true);
             }
 
-            if (kind == EcsFromEntity) {
+            if (from == EcsFromEntity) {
                 entity = column->source;
             }
 
         /* Column that just passes a handle to the system (no data) */
-        } else if (kind == EcsFromEmpty) {
+        } else if (from == EcsFromEmpty) {
             component = column->is.component;
             table_data->columns[c] = 0;
 
         /* Column that retrieves data from a dynamic entity */
-        } else if (kind == EcsFromContainer || kind == EcsCascade) {
-            if (oper_kind == EcsOperAnd ||
-                oper_kind == EcsOperOptional)
+        } else if (from == EcsFromContainer || from == EcsCascade) {
+            if (op == EcsOperAnd ||
+                op == EcsOperOptional)
             {
                 component = column->is.component;
 
                 ecs_components_contains_component(
                     world, table_type, component, ECS_CHILDOF, &entity);
 
-            } else if (oper_kind == EcsOperOr) {
+            } else if (op == EcsOperOr) {
                 component = components_contains(
                     world,
                     table_type,
@@ -164,8 +164,8 @@ void add_table(
             }
 
         /* Column that retrieves data from a system */
-        } else if (kind == EcsFromSystem) {
-            if (oper_kind == EcsOperAnd) {
+        } else if (from == EcsFromSystem) {
+            if (op == EcsOperAnd) {
                 component = column->is.component;
             }
 
@@ -174,7 +174,7 @@ void add_table(
 
         /* This column does not retrieve data from a static entity (either
          * EcsFromSystem or EcsFromContainer) and is not just a handle */
-        if (!entity && kind != EcsFromEmpty) {
+        if (!entity && from != EcsFromEmpty) {
             if (component) {
                 /* Retrieve offset for component */
                 table_data->columns[c] = ecs_type_index_of(table->type, component);
@@ -200,7 +200,7 @@ void add_table(
             }
         }
 
-        if (oper_kind == EcsOperOptional) {
+        if (op == EcsOperOptional) {
             /* If table doesn't have the field, mark it as no data */
             if (!ecs_type_has_entity_intern(
                 world, table_type, component, true))
@@ -227,7 +227,7 @@ void add_table(
          * reference. Having the reference already linked to the system table
          * makes changing this administation easier when the change happens.
          * */
-        if (entity || table_data->columns[c] == -1 || kind == EcsCascade) {
+        if (entity || table_data->columns[c] == -1 || from == EcsCascade) {
             if (ecs_has(world, component, EcsComponent)) {
                 EcsComponent *component_data = ecs_get_ptr(
                         world, component, EcsComponent);
@@ -238,15 +238,15 @@ void add_table(
                             &table_data->references, &reference_params);
 
                     /* Find the entity for the component */
-                    if (kind == EcsFromEntity) {
+                    if (from == EcsFromEntity) {
                         e = entity;
-                    } else if (kind == EcsCascade) {
+                    } else if (from == EcsCascade) {
                         e = entity;
                     } else {
                         e = ecs_get_entity_for_component(
                             world, entity, table_type, component);
 
-                        if (kind != EcsCascade) {
+                        if (from != EcsCascade) {
                             ecs_assert(e != 0, ECS_INTERNAL_ERROR, NULL);
                         }
                     }
@@ -351,48 +351,48 @@ bool match_table(
         return false;
     }
 
-    uint32_t i, column_count = ecs_vector_count(system_data->base.columns);
-    ecs_system_column_t *buffer = ecs_vector_first(system_data->base.columns);
+    uint32_t i, column_count = ecs_vector_count(system_data->base.sig.columns);
+    ecs_signature_column_t *buffer = ecs_vector_first(system_data->base.sig.columns);
 
     for (i = 0; i < column_count; i ++) {
-        ecs_system_column_t *elem = &buffer[i];
-        ecs_system_expr_elem_kind_t elem_kind = elem->kind;
-        ecs_system_expr_oper_kind_t oper_kind = elem->oper_kind;
+        ecs_signature_column_t *elem = &buffer[i];
+        ecs_signature_from_kind_t from = elem->from;
+        ecs_signature_op_kind_t op = elem->op;
 
-        if (oper_kind == EcsOperAnd) {
-            if (elem_kind == EcsFromSelf || elem_kind == EcsFromOwned || 
-                elem_kind == EcsFromShared) 
+        if (op == EcsOperAnd) {
+            if (from == EcsFromSelf || from == EcsFromOwned || 
+                from == EcsFromShared) 
             {
                 /* Already validated */
-            } else if (elem_kind == EcsFromContainer) {
+            } else if (from == EcsFromContainer) {
                 if (!ecs_components_contains_component(
                     world, table_type, elem->is.component, ECS_CHILDOF, NULL))
                 {
                     return false;
                 }
-            } else if (elem_kind == EcsFromEntity) {
+            } else if (from == EcsFromEntity) {
                 ecs_type_t type = ecs_get_type(world, elem->source);
                 if (!ecs_type_has_entity(world, type, elem->is.component)) {
                     return false;
                 }
             }
-        } else if (oper_kind == EcsOperOr) {
+        } else if (op == EcsOperOr) {
             type = elem->is.type;
-            if (elem_kind == EcsFromSelf) {
+            if (from == EcsFromSelf) {
                 if (!ecs_type_contains(
                     world, table_type, type, false, true))
                 {
                     return false;
                 }
-            } else if (elem_kind == EcsFromContainer) {
+            } else if (from == EcsFromContainer) {
                 if (!components_contains(
                     world, table_type, type, NULL, false))
                 {
                     return false;
                 }
             }
-        } else if (oper_kind == EcsOperNot) {
-            if (elem_kind == EcsFromEntity) {
+        } else if (op == EcsOperNot) {
+            if (from == EcsFromEntity) {
                 ecs_type_t type = ecs_get_type(world, elem->source);
                 if (ecs_type_has_entity(world, type, elem->is.component)) {
                     return false;
@@ -446,7 +446,7 @@ static
 ecs_entity_t get_cascade_component(
     EcsColSystem *system_data)
 {
-    ecs_system_column_t *column = ecs_vector_first(system_data->base.columns);
+    ecs_signature_column_t *column = ecs_vector_first(system_data->base.sig.columns);
     return column[system_data->base.cascade_by - 1].is.component;
 }
 
@@ -726,7 +726,7 @@ ecs_entity_t ecs_new_col_system(
     ecs_world_t *world,
     const char *id,
     EcsSystemKind kind,
-    const char *sig,
+    ecs_signature_t sig,
     ecs_system_action_t action)
 {
     uint32_t count = ecs_signature_columns_count(sig);
@@ -743,9 +743,9 @@ ecs_entity_t ecs_new_col_system(
     memset(system_data, 0, sizeof(EcsColSystem));
     system_data->base.action = action;
     system_data->base.enabled = true;
-    system_data->base.signature = sig;
+    system_data->base.sig = sig;
     system_data->base.time_spent = 0;
-    system_data->base.columns = ecs_vector_new(&system_column_params, count);
+    system_data->base.sig = sig;
     system_data->base.kind = kind;
     system_data->base.cascade_by = 0;
     system_data->base.has_refs = false;
@@ -761,8 +761,7 @@ ecs_entity_t ecs_new_col_system(
     system_data->inactive_tables = ecs_vector_new(
         &matched_table_params, ECS_SYSTEM_INITIAL_TABLE_COUNT);
 
-    ecs_parse_component_expr(
-        world, sig, ecs_parse_signature_action, system_data);
+    ecs_system_process_signature(world, &system_data->base);
 
     ecs_system_compute_and_families(world, &system_data->base);
 
@@ -878,7 +877,7 @@ ecs_entity_t _ecs_run_w_filter(
         ecs_os_get_time(&time_start);
     }
 
-    uint32_t column_count = ecs_vector_count(system_data->base.columns);
+    uint32_t column_count = ecs_vector_count(system_data->base.sig.columns);
     ecs_entity_t interrupted_by = 0;
     ecs_system_action_t action = system_data->base.action;
     bool offset_limit = (offset | limit) != 0;

@@ -153,7 +153,7 @@ typedef struct ecs_component_data_t {
 /* -- Systems -- */
 
 /** Type that is used by systems to indicate where to fetch a component from */
-typedef enum ecs_system_expr_elem_kind_t {
+typedef enum ecs_signature_from_kind_t {
     EcsFromSelf,            /* Get component from self (default) */
     EcsFromOwned,           /* Get owned component from self */
     EcsFromShared,          /* Get shared component from self */
@@ -162,36 +162,36 @@ typedef enum ecs_system_expr_elem_kind_t {
     EcsFromEmpty,           /* Get entity handle by id */
     EcsFromEntity,          /* Get component from other entity */
     EcsCascade              /* Walk component in cascading (hierarchy) order */
-} ecs_system_expr_elem_kind_t;
+} ecs_signature_from_kind_t;
 
 /** Type describing an operator used in an signature of a system signature */
-typedef enum ecs_system_expr_oper_kind_t {
+typedef enum ecs_signature_op_kind_t {
     EcsOperAnd = 0,
     EcsOperOr = 1,
     EcsOperNot = 2,
     EcsOperOptional = 3,
     EcsOperLast = 4
-} ecs_system_expr_oper_kind_t;
+} ecs_signature_op_kind_t;
 
 /** Callback used by the system signature expression parser */
 typedef int (*ecs_parse_action_t)(
     ecs_world_t *world,
-    ecs_system_expr_elem_kind_t elem_kind,
-    ecs_system_expr_oper_kind_t oper_kind,
+    ecs_signature_from_kind_t elem_kind,
+    ecs_signature_op_kind_t oper_kind,
     const char *component,
     const char *source,
     void *ctx);
 
 /** Type that describes a single column in the system signature */
-typedef struct ecs_system_column_t {
-    ecs_system_expr_elem_kind_t kind;       /* Element kind (Entity, Component) */
-    ecs_system_expr_oper_kind_t oper_kind;  /* Operator kind (AND, OR, NOT) */
+typedef struct ecs_signature_column_t {
+    ecs_signature_from_kind_t from;       /* Element kind (Entity, Component) */
+    ecs_signature_op_kind_t op;           /* Operator kind (AND, OR, NOT) */
     union {
         ecs_type_t type;             /* Used for OR operator */
         ecs_entity_t component;      /* Used for AND operator */
     } is;
     ecs_entity_t source;             /* Source entity (used with FromEntity) */
-} ecs_system_column_t;
+} ecs_signature_column_t;
 
 /** Type containing data for a table matched with a system */
 typedef struct ecs_matched_table_t {
@@ -205,8 +205,7 @@ typedef struct ecs_matched_table_t {
 /** Base type for a system */
 typedef struct EcsSystem {
     ecs_system_action_t action;    /* Callback to be invoked for matching rows */
-    const char *signature;         /* Signature with which system was created */
-    ecs_vector_t *columns;         /* Column components */
+    ecs_signature_t sig;           /* Column components */
 
     /* Precomputed types for quick comparisons */
     ecs_type_t not_from_self;      /* Exclude components from self */

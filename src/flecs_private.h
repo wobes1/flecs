@@ -286,6 +286,10 @@ void ecs_system_init_base(
     ecs_world_t *world,
     EcsSystem *base_data);
 
+void ecs_system_process_signature(
+    ecs_world_t *world,
+    EcsSystem *system_data);
+
 /* Compute the AND type from the system columns */
 void ecs_system_compute_and_families(
     ecs_world_t *world,
@@ -296,7 +300,7 @@ ecs_entity_t ecs_new_col_system(
     ecs_world_t *world,
     const char *id,
     EcsSystemKind kind,
-    const char *sig,
+    ecs_signature_t sig,
     ecs_system_action_t action);
 
 /* Notify column system of a new table, which initiates system-table matching */
@@ -334,11 +338,11 @@ ecs_type_t ecs_notify_row_system(
     uint32_t offset,
     uint32_t limit);
 
-/* Callback for parse_component_expr that stores result as ecs_system_column_t's */
+/* Callback for parse_component_expr that stores result as ecs_signature_column_t's */
 int ecs_parse_signature_action(
     ecs_world_t *world,
-    ecs_system_expr_elem_kind_t elem_kind,
-    ecs_system_expr_oper_kind_t oper_kind,
+    ecs_signature_from_kind_t elem_kind,
+    ecs_signature_op_kind_t oper_kind,
     const char *component_id,
     const char *source_id,
     void *data);
@@ -403,11 +407,11 @@ int ecs_parse_component_expr(
 /* Test whether signature has columns that must be retrieved from a table */
 bool ecs_needs_tables(
     ecs_world_t *world,
-    const char *signature);
+    ecs_signature_t signature);
 
 /* Count number of columns signature */
 uint32_t ecs_signature_columns_count(
-    const char *sig);
+    ecs_signature_t sig);
 
 #define assert_func(cond) _assert_func(cond, #cond, __FILE__, __LINE__, __func__)
 void _assert_func(

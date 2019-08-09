@@ -56,8 +56,16 @@ extern "C" {
 
 /* -- Supporting types -- */
 
-/** A hash of the component identifiers in a type. */
+/** A vector with entities */
 typedef const ecs_vector_t* ecs_type_t;
+
+/** Type that stores a parsed signature */
+struct ecs_signature_data_t {
+    const char *expr;
+    ecs_vector_t *columns;
+};
+
+typedef struct ecs_signature_data_t ecs_signature_t;
 
 /** Id component type */
 typedef const char *EcsId;
@@ -1438,6 +1446,14 @@ char* ecs_type_to_expr(
     ecs_type_t type);
 
 
+/* -- Signature API -- */
+
+/** Parse signature */
+ecs_signature_t ecs_parse_signature(
+    ecs_world_t *world,
+    const char *signature);
+    
+
 /* -- System API -- */
 
 /** Enable or disable a system.
@@ -1812,7 +1828,7 @@ ecs_entity_t ecs_new_system(
     ecs_world_t *world,
     const char *id,
     EcsSystemKind kind,
-    const char *sig,
+    ecs_signature_t sig,
     ecs_system_action_t action);
 
 /** Get handle to type.
@@ -2046,7 +2062,7 @@ void _ecs_assert(
  * After the macro, the application will have access to a Move entity variable 
  * which can be accessed through ecs_entity(Move). */
 #define ECS_SYSTEM(world, id, kind, ...) \
-    ecs_entity_t F##id = ecs_new_system(world, #id, kind, #__VA_ARGS__, id);\
+    ecs_entity_t F##id = ecs_new_system(world, #id, kind, ecs_parse_signature(world, #__VA_ARGS__), id);\
     ecs_entity_t id = F##id;\
     (void)id;\
 

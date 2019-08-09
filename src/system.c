@@ -4,18 +4,19 @@ static
 bool has_refs(
     EcsSystem *system_data)
 {
-    uint32_t i, count = ecs_vector_count(system_data->columns);
-    ecs_system_column_t *columns = ecs_vector_first(system_data->columns);
+    uint32_t i, count = ecs_vector_count(system_data->sig.columns);
+    ecs_signature_column_t *columns = ecs_vector_first(system_data->sig.columns);
 
     for (i = 0; i < count; i ++) {
-        ecs_system_expr_elem_kind_t elem_kind = columns[i].kind;
+        ecs_signature_from_kind_t from = columns[i].from;
 
-        if (columns[i].oper_kind == EcsOperNot && elem_kind == EcsFromEmpty) {
+        if (columns[i].op == EcsOperNot && from == EcsFromEmpty) {
             /* Special case: if oper kind is Not and the query contained a
              * shared expression, the expression is translated to FromId to
              * prevent resolving the ref */
             return true;
-        } else if (elem_kind != EcsFromSelf && elem_kind != EcsFromEmpty) {
+
+        } else if (from != EcsFromSelf && from != EcsFromEmpty) {
             /* If the component is not from the entity being iterated over, and
              * the column is not just passing an id, it must be a reference to
              * another entity. */
@@ -24,6 +25,54 @@ bool has_refs(
     }
 
     return false;
+}
+
+void ecs_system_process_signature(
+    ecs_world_t *world,
+    EcsSystem *system_data)
+{
+    int i, count = ecs_vector_count(system_data->sig.columns);
+    ecs_signature_column_t *columns = ecs_vector_first(system_data->sig.columns);
+
+    for (i = 0; i < count; i ++) {
+        ecs_signature_column_t *elem = &columns[i];
+        ecs_signature_from_kind_t from = elem->from;
+        ecs_signature_op_kind_t op = elem->op;
+
+        /* AND (default) and optional columns are stored the same way */
+        if (op == EcsOperAnd || op == EcsOperOptional) {
+            if (from == EcsFromEntity) {
+                ecs_set_watch(world, &world->main_stage, elem->source);
+
+            } else if (op == EcsOperOr) {
+                /* Nothing to be done here */
+            } else if (op == EcsOperNot) {
+                if (from == EcsFromSelf) {
+                    system_data->not_from_self =
+                        ecs_type_add_intern(
+                            world, NULL, system_data->not_from_self, 
+                            elem->is.component);
+                } else if (from == EcsFromOwned) {
+                    system_data->not_from_owned =
+                        ecs_type_add_intern(
+                            world, NULL, system_data->not_from_owned, 
+                            elem->is.component);
+                } else if (from == EcsFromShared) {
+                    system_data->not_from_shared =
+                        ecs_type_add_intern(
+                            world, NULL, system_data->not_from_shared, 
+                            elem->is.component);                    
+                } else if (from == EcsFromEntity) {
+                    /* Nothing to be done here */
+                } else {
+                    system_data->not_from_component =
+                        ecs_type_add_intern(
+                            world, NULL, system_data->not_from_component, 
+                            elem->is.component);
+                }
+            }
+        }
+    }
 }
 
 /** Create a new row system. A row system is a system executed on a single row,
@@ -35,7 +84,7 @@ ecs_entity_t new_row_system(
     const char *id,
     EcsSystemKind kind,
     bool needs_tables,
-    const char *sig,
+    ecs_signature_t sig,
     ecs_system_action_t action)
 {
     uint32_t count = ecs_signature_columns_count(sig);
@@ -51,28 +100,28 @@ ecs_entity_t new_row_system(
     EcsRowSystem *system_data = ecs_get_ptr(world, result, EcsRowSystem);
     memset(system_data, 0, sizeof(EcsRowSystem));
     system_data->base.action = action;
-    system_data->base.signature = sig;
+    system_data->base.sig = sig;
     system_data->base.enabled = true;
     system_data->base.kind = kind;
     system_data->base.cascade_by = 0;
     system_data->base.has_refs = false;
     system_data->components = ecs_vector_new(&handle_arr_params, count);
 
-    ecs_parse_component_expr(
-        world, sig, ecs_parse_signature_action, system_data);
+    system_data->base.sig = sig;
+    ecs_system_process_signature(world, &system_data->base);
 
     ecs_type_t type_id = 0;
-    uint32_t i, column_count = ecs_vector_count(system_data->base.columns);
-    ecs_system_column_t *buffer = ecs_vector_first(system_data->base.columns);
+    uint32_t i, column_count = ecs_vector_count(system_data->base.sig.columns);
+    ecs_signature_column_t *buffer = ecs_vector_first(system_data->base.sig.columns);
 
     for (i = 0; i < column_count; i ++) {
         ecs_entity_t *h = ecs_vector_add(
             &system_data->components, &handle_arr_params);
 
-        ecs_system_column_t *column = &buffer[i];
+        ecs_signature_column_t *column = &buffer[i];
         *h = column->is.component;
 
-        if (column->kind != EcsFromEmpty) {
+        if (column->from != EcsFromEmpty) {
             type_id = ecs_type_add_intern(
                 world, NULL, type_id, column->is.component);
         }
@@ -107,14 +156,14 @@ void ecs_system_init_base(
     ecs_world_t *world,
     EcsSystem *base_data)
 {
-    int i, count = ecs_vector_count(base_data->columns);
-    ecs_system_column_t *columns = ecs_vector_first(base_data->columns);
+    int i, count = ecs_vector_count(base_data->sig.columns);
+    ecs_signature_column_t *columns = ecs_vector_first(base_data->sig.columns);
 
     for (i = 0; i < count; i ++) {
-        ecs_system_column_t *column = &columns[i];
-        ecs_system_expr_oper_kind_t oper = column->oper_kind; 
+        ecs_signature_column_t *column = &columns[i];
+        ecs_signature_op_kind_t op = column->op; 
 
-        if (oper == EcsOperOr) {
+        if (op == EcsOperOr) {
             if (ecs_type_has_entity_intern(
                 world, column->is.type, 
                 ecs_entity(EcsDisabled), false))
@@ -128,7 +177,7 @@ void ecs_system_init_base(
             {
                 base_data->match_prefab = true;
             }            
-        } else if (oper == EcsOperAnd || oper == EcsOperOptional) {
+        } else if (op == EcsOperAnd || op == EcsOperOptional) {
             if (column->is.component == ecs_entity(EcsDisabled)) {
                 base_data->match_disabled = true;
             } else if (column->is.component == ecs_entity(EcsPrefab)) {
@@ -146,145 +195,45 @@ void ecs_system_compute_and_families(
     ecs_world_t *world,
     EcsSystem *system_data)
 {
-    uint32_t i, column_count = ecs_vector_count(system_data->columns);
-    ecs_system_column_t *buffer = ecs_vector_first(system_data->columns);
+    uint32_t i, column_count = ecs_vector_count(system_data->sig.columns);
+    ecs_signature_column_t *buffer = ecs_vector_first(system_data->sig.columns);
 
     for (i = 0; i < column_count; i ++) {
-        ecs_system_column_t *elem = &buffer[i];
-        ecs_system_expr_elem_kind_t elem_kind = elem->kind;
-        ecs_system_expr_oper_kind_t oper_kind = elem->oper_kind;
+        ecs_signature_column_t *elem = &buffer[i];
+        ecs_signature_from_kind_t from = elem->from;
+        ecs_signature_op_kind_t op = elem->op;
 
-        if (elem_kind == EcsFromSelf) {
-            if (oper_kind == EcsOperAnd) {
+        if (from == EcsFromSelf) {
+            if (op == EcsOperAnd) {
                 system_data->and_from_self = ecs_type_add_intern(
                   world, NULL, system_data->and_from_self, elem->is.component);
             }
 
-        } else if (elem_kind == EcsFromOwned) {
-            if (oper_kind == EcsOperAnd) {
+        } else if (from == EcsFromOwned) {
+            if (op == EcsOperAnd) {
                 system_data->and_from_owned = ecs_type_add_intern(
                   world, NULL, system_data->and_from_owned, elem->is.component);
             }
 
-        } else if (elem_kind == EcsFromShared) {
-            if (oper_kind == EcsOperAnd) {
+        } else if (from == EcsFromShared) {
+            if (op == EcsOperAnd) {
                 system_data->and_from_shared = ecs_type_add_intern(
                  world, NULL, system_data->and_from_shared, elem->is.component);
             }
 
-        } else if (elem_kind == EcsFromSystem) {
-            if (oper_kind == EcsOperAnd) {
+        } else if (from == EcsFromSystem) {
+            if (op == EcsOperAnd) {
                 system_data->and_from_system = ecs_type_add_intern(
                  world, NULL, system_data->and_from_system, elem->is.component);
             }
 
-        } else if (elem_kind == EcsCascade) {
+        } else if (from == EcsCascade) {
             system_data->cascade_by = i + 1;
         }
     }
 }
 
-/** Parse callback that adds component to the components array for a system */
-int ecs_parse_signature_action(
-    ecs_world_t *world,
-    ecs_system_expr_elem_kind_t elem_kind,
-    ecs_system_expr_oper_kind_t oper_kind,
-    const char *component_id,
-    const char *source_id,
-    void *data)
-{
-    EcsSystem *system_data = data;
-    ecs_system_column_t *elem;
 
-    /* Lookup component handly by string identifier */
-    ecs_entity_t component = ecs_lookup(world, component_id);
-    if (!component) {
-        /* "0" is a valid expression used to indicate that a system matches no
-         * components */
-        if (strcmp(component_id, "0")) {
-            ecs_abort(ECS_INVALID_COMPONENT_ID, component_id);
-        } else {
-            /* Don't add 0 component to signature */
-            return 0;
-        }
-    }
-
-    /* If retrieving a component from a system, only the AND operator is
-     * supported. The set of system components is expected to be constant, and
-     * thus no conditional operators are needed. */
-    if (elem_kind == EcsFromSystem && oper_kind != EcsOperAnd) {
-        return ECS_INVALID_SIGNATURE;
-    }
-
-    /* AND (default) and optional columns are stored the same way */
-    if (oper_kind == EcsOperAnd || oper_kind == EcsOperOptional) {
-        elem = ecs_vector_add(&system_data->columns, &system_column_params);
-        elem->kind = elem_kind;
-        elem->oper_kind = oper_kind;
-        elem->is.component = component;
-
-        if (elem_kind == EcsFromEntity) {
-            elem->source = ecs_lookup(world, source_id);
-            if (!elem->source) {
-                ecs_abort(ECS_UNRESOLVED_IDENTIFIER, source_id);
-            }
-
-            ecs_set_watch(world, &world->main_stage, elem->source);
-        }
-
-    /* OR columns store a type id instead of a single component */
-    } else if (oper_kind == EcsOperOr) {
-        elem = ecs_vector_last(system_data->columns, &system_column_params);
-        if (elem->oper_kind == EcsOperAnd) {
-            elem->is.type = ecs_type_add_intern(
-                world, NULL, 0, elem->is.component);
-        } else {
-            if (elem->kind != elem_kind) {
-                /* Cannot mix FromEntity and FromComponent in OR */
-                goto error;
-            }
-        }
-
-        elem->is.type = ecs_type_add_intern(
-            world, NULL, elem->is.type, component);
-        elem->kind = elem_kind;
-        elem->oper_kind = EcsOperOr;
-
-    /* A system stores two NOT familes; one for entities and one for components.
-     * These can be quickly & efficiently used to exclude tables with
-     * ecs_type_contains. */
-    } else if (oper_kind == EcsOperNot) {
-        elem = ecs_vector_add(&system_data->columns, &system_column_params);
-        elem->kind = EcsFromEmpty; /* Just pass handle to system */
-        elem->oper_kind = EcsOperNot;
-        elem->is.component = component;
-
-        if (elem_kind == EcsFromSelf) {
-            system_data->not_from_self =
-                ecs_type_add_intern(
-                    world, NULL, system_data->not_from_self, component);
-        } else if (elem_kind == EcsFromOwned) {
-            system_data->not_from_owned =
-                ecs_type_add_intern(
-                    world, NULL, system_data->not_from_owned, component);
-        } else if (elem_kind == EcsFromShared) {
-            system_data->not_from_shared =
-                ecs_type_add_intern(
-                    world, NULL, system_data->not_from_shared, component);                    
-        } else if (elem_kind == EcsFromEntity) {
-            elem->kind = EcsFromEntity;
-            elem->source = ecs_lookup(world, source_id);
-        } else {
-            system_data->not_from_component =
-              ecs_type_add_intern(
-                  world, NULL, system_data->not_from_component, component);
-        }
-    }
-
-    return 0;
-error:
-    return -1;
-}
 
 /** Run system on a single row */
 ecs_type_t ecs_notify_row_system(
@@ -315,8 +264,8 @@ ecs_type_t ecs_notify_row_system(
 
     ecs_system_action_t action = system_data->base.action;
 
-    uint32_t i, column_count = ecs_vector_count(system_data->base.columns);
-    ecs_system_column_t *buffer = ecs_vector_first(system_data->base.columns);
+    uint32_t i, column_count = ecs_vector_count(system_data->base.sig.columns);
+    ecs_signature_column_t *buffer = ecs_vector_first(system_data->base.sig.columns);
     int32_t *columns = ecs_os_alloca(int32_t, column_count);
     ecs_reference_t *references = ecs_os_alloca(ecs_reference_t, column_count);
 
@@ -327,7 +276,7 @@ ecs_type_t ecs_notify_row_system(
     for (i = 0; i < column_count; i ++) {
         ecs_entity_t entity = 0;
 
-        if (buffer[i].kind == EcsFromSelf) {
+        if (buffer[i].from == EcsFromSelf) {
             /* If a regular column, find corresponding column in table */
             columns[i] = ecs_type_index_of(type, buffer[i].is.component) + 1;
 
@@ -338,21 +287,22 @@ ecs_type_t ecs_notify_row_system(
                     world, 0, table->type, buffer[i].is.component);
 
                 ecs_assert(entity != 0 || 
-                           buffer[i].oper_kind == EcsOperOptional, 
-                                ECS_INTERNAL_ERROR, ecs_get_id(world, buffer[i].is.component));
+                    buffer[i].op == EcsOperOptional, 
+                    ECS_INTERNAL_ERROR, ecs_get_id(world, 
+                    buffer[i].is.component));
             }
         }
 
-        if (entity || buffer[i].kind != EcsFromSelf) {
+        if (entity || buffer[i].from != EcsFromSelf) {
             /* If not a regular column, it is a reference */
             ecs_entity_t component = buffer[i].is.component;
 
             /* Resolve component from the right source */
             
-            if (buffer[i].kind == EcsFromSystem) {
+            if (buffer[i].from == EcsFromSystem) {
                 /* The source is the system itself */
                 entity = system;
-            } else if (buffer[i].kind == EcsFromEntity) {
+            } else if (buffer[i].from == EcsFromEntity) {
                 /* The source is another entity (prefab, container, other) */
                 entity = buffer[i].source;
             }
@@ -421,7 +371,7 @@ ecs_entity_t ecs_new_system(
     ecs_world_t *world,
     const char *id,
     EcsSystemKind kind,
-    const char *sig,
+    ecs_signature_t sig,
     ecs_system_action_t action)
 {
     ecs_assert(kind == EcsManual ||
