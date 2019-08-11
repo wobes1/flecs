@@ -202,28 +202,33 @@ typedef struct ecs_matched_table_t {
     int32_t depth;                  /* Depth of table (when using CASCADE) */
 } ecs_matched_table_t;
 
-/** Base type for a system */
-typedef struct EcsSystem {
-    ecs_system_action_t action;    /* Callback to be invoked for matching rows */
-    ecs_signature_t sig;           /* Column components */
+/** Query that is automatically matched against active tables */
+struct ecs_query_t {
+    /* Signature of query */
+    ecs_signature_t sig;
+
+    /* Tables matched with query */
+    ecs_vector_t *tables;
 
     /* Precomputed types for quick comparisons */
     ecs_type_t not_from_self;      /* Exclude components from self */
     ecs_type_t not_from_owned;     /* Exclude components from self only if owned */
-    ecs_type_t not_from_shared;     /* Exclude components from self only if shared */
+    ecs_type_t not_from_shared;    /* Exclude components from self only if shared */
     ecs_type_t not_from_component; /* Exclude components from components */
     ecs_type_t and_from_self;      /* Which components are required from entity */
-    ecs_type_t and_from_owned;      /* Which components are required from entity */
-    ecs_type_t and_from_shared;      /* Which components are required from entity */
+    ecs_type_t and_from_owned;     /* Which components are required from entity */
+    ecs_type_t and_from_shared;    /* Which components are required from entity */
     ecs_type_t and_from_system;    /* Used to auto-add components to system */
-    
-    int32_t cascade_by;            /* CASCADE column index */
+
+    ecs_entity_t system;           /* Handle to system */
+};
+
+/** Base type for a system */
+typedef struct EcsSystem {
+    ecs_system_action_t action;    /* Callback to be invoked for matching rows */
     EcsSystemKind kind;            /* Kind of system */
     float time_spent;              /* Time spent on running system */
     bool enabled;                  /* Is system enabled or not */
-    bool has_refs;                 /* Does the system have reference columns */
-    bool match_prefab;             /* Should this system match prefabs */
-    bool match_disabled;           /* Should this system match disabled entities */
 } EcsSystem;
 
 /** A column system is a system that is ran periodically (default = every frame)
@@ -267,9 +272,8 @@ typedef struct EcsSystem {
 typedef struct EcsColSystem {
     EcsSystem base;
     ecs_entity_t entity;                  /* Entity id of system, used for ordering */
+    ecs_query_t *query;                   /* System query */
     ecs_vector_t *jobs;                   /* Jobs for this system */
-    ecs_vector_t *tables;                 /* Vector with matched types */
-    ecs_vector_t *inactive_tables;        /* Inactive types */
     ecs_vector_params_t column_params;    /* Parameters for type_columns */
     ecs_vector_params_t component_params; /* Parameters for components */
     ecs_vector_params_t ref_params;       /* Parameters for refs */
@@ -283,6 +287,7 @@ typedef struct EcsColSystem {
  * ecs_remove and ecs_set. */
 typedef struct EcsRowSystem {
     EcsSystem base;
+    ecs_signature_t sig;            /* System signature */
     ecs_vector_t *components;       /* Components in order of signature */
 } EcsRowSystem;
 
@@ -385,6 +390,8 @@ struct ecs_world {
     ecs_vector_t *on_store_systems;   
     ecs_vector_t *on_demand_systems;  
     ecs_vector_t *inactive_systems;   
+
+    ecs_sparse_t *queries;
 
 
     /* -- Tasks -- */

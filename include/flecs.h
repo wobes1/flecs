@@ -61,11 +61,22 @@ typedef const ecs_vector_t* ecs_type_t;
 
 /** Type that stores a parsed signature */
 struct ecs_signature_data_t {
-    const char *expr;
-    ecs_vector_t *columns;
+    const char *expr;           /* Original expression string */
+    ecs_vector_t *columns;      /* Columns that contain parsed data */
+    int32_t cascade_by;         /* Identify CASCADE column */
+    bool match_prefab;          /* Does signature match prefabs */
+    bool match_disabled;        /* Does signature match disabled */
+    bool has_refs;              /* Does signature have references */
+    bool owned;                 /* Does this object own the memory */
+
+    /* If a signature is passed into a query or system, ownership is
+     * transferred to that object. */
 };
 
 typedef struct ecs_signature_data_t ecs_signature_t;
+
+/** Queries match a signature with tables */
+typedef struct ecs_query_t ecs_query_t;
 
 /** Id component type */
 typedef const char *EcsId;
@@ -1452,7 +1463,10 @@ char* ecs_type_to_expr(
 ecs_signature_t ecs_parse_signature(
     ecs_world_t *world,
     const char *signature);
-    
+
+/** Free signature */ 
+void ecs_signature_free(
+    ecs_signature_t *sig);
 
 /* -- System API -- */
 
@@ -1790,6 +1804,11 @@ ecs_entity_t ecs_new_component(
     const char *id,
     size_t size);
 
+/** Create a new query */
+ecs_query_t* ecs_new_query(
+    ecs_world_t *world,
+    ecs_signature_t *signature);
+
 /** Create a new system.
  * This operation creates a new system with a specified id, kind and action.
  * After this operation is called, the system will be active. Systems can be
@@ -1828,7 +1847,7 @@ ecs_entity_t ecs_new_system(
     ecs_world_t *world,
     const char *id,
     EcsSystemKind kind,
-    ecs_signature_t sig,
+    ecs_signature_t *sig,
     ecs_system_action_t action);
 
 /** Get handle to type.
@@ -2062,7 +2081,8 @@ void _ecs_assert(
  * After the macro, the application will have access to a Move entity variable 
  * which can be accessed through ecs_entity(Move). */
 #define ECS_SYSTEM(world, id, kind, ...) \
-    ecs_entity_t F##id = ecs_new_system(world, #id, kind, ecs_parse_signature(world, #__VA_ARGS__), id);\
+    ecs_signature_t id##_sig = ecs_parse_signature(world, #__VA_ARGS__);\
+    ecs_entity_t F##id = ecs_new_system(world, #id, kind, &id##_sig, id);\
     ecs_entity_t id = F##id;\
     (void)id;\
 

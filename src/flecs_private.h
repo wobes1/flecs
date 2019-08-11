@@ -33,17 +33,6 @@ ecs_entity_t ecs_get_prefab_from_type(
     ecs_entity_t entity,
     ecs_type_t type);
 
-/* Notify row system of entity (identified by row.row) */
-ecs_type_t ecs_notify(
-    ecs_world_t *world,
-    ecs_stage_t *stage,
-    ecs_map_t *systems,
-    ecs_type_t type,
-    ecs_table_t *table,
-    ecs_column_t *table_columns,
-    int32_t offset,
-    int32_t limit);
-
 /* Mark an entity as being watched. This is used to trigger automatic rematching
  * when entities used in system expressions change their components. */
 void ecs_set_watch(
@@ -282,32 +271,16 @@ void ecs_table_free(
 
 /* -- System API -- */
 
-void ecs_system_init_base(
-    ecs_world_t *world,
-    EcsSystem *base_data);
-
-void ecs_system_process_signature(
-    ecs_world_t *world,
-    EcsSystem *system_data);
-
-/* Compute the AND type from the system columns */
-void ecs_system_compute_and_families(
-    ecs_world_t *world,
-    EcsSystem *system_data);
-
 /* Create new table system */
-ecs_entity_t ecs_new_col_system(
+ecs_entity_t ecs_col_system_new(
     ecs_world_t *world,
     const char *id,
     EcsSystemKind kind,
-    ecs_signature_t sig,
+    ecs_signature_t *sig,
     ecs_system_action_t action);
 
-/* Notify column system of a new table, which initiates system-table matching */
-void ecs_col_system_notify_of_table(
-    ecs_world_t *world,
-    ecs_entity_t system,
-    ecs_table_t *table);
+void ecs_col_system_free(
+    EcsColSystem *system_data);
 
 /* Notify row system of a new type, which initiates system-type matching */
 void ecs_row_system_notify_of_type(
@@ -329,7 +302,7 @@ void ecs_run_task(
     ecs_entity_t system);
 
 /* Invoke row system */
-ecs_type_t ecs_notify_row_system(
+void ecs_notify_row_system(
     ecs_world_t *world,
     ecs_entity_t system,
     ecs_type_t type,
@@ -347,15 +320,15 @@ int ecs_parse_signature_action(
     const char *source_id,
     void *data);
 
-/* Trigger rematch of system */
-void ecs_rematch_system(
-    ecs_world_t *world,
-    ecs_entity_t system);
+/* -- Query API -- */
 
-/* Re-resolve references of system after table realloc */
-void ecs_revalidate_system_refs(
+void ecs_query_match_table(
     ecs_world_t *world,
-    ecs_entity_t system);
+    ecs_query_t *query,
+    ecs_table_t *table);
+
+void ecs_query_free(
+    ecs_query_t *query);
 
 /* -- Worker API -- */
 
@@ -382,12 +355,6 @@ void ecs_os_time_sleep(unsigned int sec, unsigned int nanosec);
 
 /* -- Private utilities -- */
 
-/* Compute hash */
-void ecs_hash(
-    const void *key,
-    size_t length,
-    uint32_t *result);
-
 /* Convert 64bit value to ecs_record_t type. ecs_record_t is stored as 64bit int in the
  * entity index */
 ecs_record_t ecs_to_row(
@@ -407,11 +374,11 @@ int ecs_parse_component_expr(
 /* Test whether signature has columns that must be retrieved from a table */
 bool ecs_needs_tables(
     ecs_world_t *world,
-    ecs_signature_t signature);
+    ecs_signature_t *sig);
 
 /* Count number of columns signature */
 uint32_t ecs_signature_columns_count(
-    ecs_signature_t sig);
+    ecs_signature_t *sig);
 
 #define assert_func(cond) _assert_func(cond, #cond, __FILE__, __LINE__, __func__)
 void _assert_func(

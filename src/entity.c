@@ -853,39 +853,6 @@ void* ecs_get_ptr_intern(
     return ptr;
 }
 
-ecs_type_t ecs_notify(
-    ecs_world_t *world,
-    ecs_stage_t *stage,
-    ecs_map_t *index,
-    ecs_type_t type,
-    ecs_table_t *table,
-    ecs_column_t *table_columns,
-    int32_t offset,
-    int32_t limit)
-{
-    ecs_vector_t *systems;
-    ecs_type_t modified = 0;
-
-    if ((systems = ecs_map_get_ptr(index, ecs_vector_t*, (uintptr_t)type))) {
-        ecs_entity_t *buffer = ecs_vector_first(systems);
-        uint32_t i, count = ecs_vector_count(systems);
-
-        for (i = 0; i < count; i ++) {
-            ecs_type_t m = ecs_notify_row_system(
-                world, buffer[i], table->type, table, table_columns, offset, 
-                limit);
-            
-            if (i) {
-                modified = ecs_type_merge_intern(world, stage, modified, m, 0, NULL, NULL);
-            } else {
-                modified = m;
-            }
-        }
-    }
-
-    return modified;
-}
-
 void ecs_merge_entity(
     ecs_world_t *world,
     ecs_stage_t *stage,

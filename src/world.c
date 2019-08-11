@@ -47,15 +47,6 @@ const char *ECS_ID_ID =             "EcsId";
 const char *ECS_HIDDEN_ID =         "EcsHidden";
 const char *ECS_DISABLED_ID =       "EcsDisabled";
 
-/** Comparator function for handles */
-static
-int compare_handle(
-    const void *p1,
-    const void *p2)
-{
-    return *(ecs_entity_t*)p1 - *(ecs_entity_t*)p2;
-}
-
 /** Initialize component table. This table is manually constructed to bootstrap
  * flecs. After this function has been called, the builtin components can be
  * created. */
@@ -140,34 +131,16 @@ void bootstrap_types(
     TEcsDisabled = bootstrap_type(world, EEcsDisabled);
 }
 
-static
-void notify_create_table(
-    ecs_world_t *world,
-    ecs_vector_t *systems,
-    ecs_table_t *table)
-{
-    ecs_entity_t *buffer = ecs_vector_first(systems);
-    uint32_t i, count = ecs_vector_count(systems);
-
-    for (i = 0; i < count; i ++) {
-        ecs_col_system_notify_of_table(world, buffer[i], table);
-    }
-}
-
 void ecs_notify_systems_of_table(
     ecs_world_t *world,
     ecs_table_t *table)
 {
-    notify_create_table(world, world->pre_update_systems, table);
-    notify_create_table(world, world->post_update_systems, table);
-    notify_create_table(world, world->on_load_systems, table);
-    notify_create_table(world, world->post_load_systems, table);
-    notify_create_table(world, world->pre_store_systems, table);
-    notify_create_table(world, world->on_store_systems, table);
-    notify_create_table(world, world->on_validate_systems, table);
-    notify_create_table(world, world->on_update_systems, table);
-    notify_create_table(world, world->inactive_systems, table);
-    notify_create_table(world, world->on_demand_systems, table);
+    uint32_t i, count = ecs_sparse_count(world->queries);
+
+    for (i = 0; i < count; i ++) {
+        ecs_query_t *query = ecs_sparse_get(world->queries, ecs_query_t, i);
+        ecs_query_match_table(world, query, table);
+    }
 }
 
 #ifndef NDEBUG
@@ -187,97 +160,6 @@ void no_time(
 #endif
 
 /* -- Private functions -- */
-
-static
-ecs_vector_t** frame_system_array(
-    ecs_world_t *world,
-    EcsSystemKind kind)
-{
-    ecs_assert(kind == EcsOnUpdate ||
-               kind == EcsOnValidate ||
-               kind == EcsPreUpdate ||
-               kind == EcsPostUpdate ||
-               kind == EcsPostLoad ||
-               kind == EcsOnLoad ||
-               kind == EcsPreStore ||
-               kind == EcsOnStore ||
-               kind == EcsManual,
-               ECS_INTERNAL_ERROR,
-               NULL);
-
-    if (kind == EcsOnUpdate) {
-        return &world->on_update_systems;
-    } else if (kind == EcsOnValidate) {
-        return &world->on_validate_systems;
-    } else if (kind == EcsPreUpdate) {
-        return &world->pre_update_systems;
-    } else if (kind == EcsPostUpdate) {
-        return &world->post_update_systems;
-    } else if (kind == EcsPostLoad) {
-        return &world->post_load_systems;
-    } else if (kind == EcsOnLoad) {
-        return &world->on_load_systems;
-    } else if (kind == EcsPreStore) {
-        return &world->pre_store_systems;        
-    } else if (kind == EcsOnStore) {
-        return &world->on_store_systems;
-    } else if (kind == EcsManual) {
-        return &world->on_demand_systems;        
-    }
-    
-    return NULL;
-}
-
-/** Inactive systems are systems that either:
- * - are not enabled
- * - matched with no tables
- * - matched with only empty tables.
- *
- * These systems are not considered in the main loop, which can speed up things
- * when applications contain large numbers of disabled systems.
- */
-void ecs_world_activate_system(
-    ecs_world_t *world,
-    ecs_entity_t system,
-    EcsSystemKind kind,
-    bool active)
-{
-    ecs_vector_t *src_array, *dst_array;
-
-    if (active) {
-        src_array = world->inactive_systems;
-        dst_array = *frame_system_array(world, kind);
-     } else {
-        src_array = *frame_system_array(world, kind);
-        dst_array = world->inactive_systems;
-    }
-
-    uint32_t i, count = ecs_vector_count(src_array);
-    for (i = 0; i < count; i ++) {
-        ecs_entity_t *h = ecs_vector_get(
-            src_array, &handle_arr_params, i);
-        if (*h == system) {
-            break;
-        }
-    }
-
-    if (i == count) {
-        return; /* System is disabled */
-    }
-
-    ecs_vector_move_index(
-        &dst_array, src_array, &handle_arr_params, i);
-
-    if (active) {
-         *frame_system_array(world, kind) = dst_array;
-         qsort(dst_array, ecs_vector_count(dst_array) + 1,
-          sizeof(ecs_entity_t), compare_handle);
-    } else {
-        world->inactive_systems = dst_array;
-        qsort(src_array, ecs_vector_count(src_array) + 1,
-          sizeof(ecs_entity_t), compare_handle);
-    }
-}
 
 ecs_stage_t *ecs_get_stage(
     ecs_world_t **world_ptr)
@@ -317,10 +199,7 @@ void col_systems_deinit(
 
     for (i = 0; i < count; i ++) {
         EcsColSystem *ptr = ecs_get_ptr(world, buffer[i], EcsColSystem);
-        ecs_vector_free(ptr->base.sig.columns);
-        ecs_vector_free(ptr->jobs);
-        ecs_vector_free(ptr->tables);
-        ecs_vector_free(ptr->inactive_tables);
+        ecs_col_system_free(ptr);
     }
 }
 
@@ -513,6 +392,8 @@ ecs_world_t *ecs_init(void) {
     world->inactive_systems = ecs_vector_new(&handle_arr_params, 0);
     world->on_demand_systems = ecs_vector_new(&handle_arr_params, 0);
 
+    world->queries = ecs_sparse_new(ecs_query_t, 0);
+
     world->tasks = ecs_vector_new(&handle_arr_params, 0);
     world->fini_tasks = ecs_vector_new(&handle_arr_params, 0);
 
@@ -588,8 +469,11 @@ ecs_world_t *ecs_init(void) {
     world->max_handle = 0;
 
     /* Create builtin systems for managing prefab hierarchies */
-    ecs_new_system(world, "EcsInitPrefab", EcsOnAdd, ecs_parse_signature(world, "EcsPrefab"), EcsInitPrefab);
-    ecs_new_system(world, "EcsSetPrefab", EcsOnSet, ecs_parse_signature(world, "EcsPrefab"), EcsSetPrefab);
+    ecs_signature_t sig = ecs_parse_signature(world, "EcsPrefab");
+    ecs_new_system(world, "EcsInitPrefab", EcsOnAdd, &sig, EcsInitPrefab);
+    
+    sig = ecs_parse_signature(world, "EcsPrefab");
+    ecs_new_system(world, "EcsSetPrefab", EcsOnSet, &sig, EcsSetPrefab);
 
     return world;
 }
@@ -855,72 +739,6 @@ ecs_entity_t ecs_lookup(
 }
 
 static
-void rematch_system_array(
-    ecs_world_t *world,
-    ecs_vector_t *systems)
-{
-    uint32_t i, count = ecs_vector_count(systems);
-    ecs_entity_t *buffer = ecs_vector_first(systems);
-
-    for (i = 0; i < count; i ++) {
-        ecs_entity_t system = buffer[i];
-        ecs_rematch_system(world, system);
-
-        if (system != buffer[i]) {
-            /* It is possible that rematching a system caused it to be activated
-             * or deactived. In that case, reevaluate the current element again,
-             * as it will now contain a different system. */
-            i --;
-            count = ecs_vector_count(systems);
-        }
-    }
-}
-
-static
-void rematch_systems(
-    ecs_world_t *world)
-{
-    rematch_system_array(world, world->on_load_systems);
-    rematch_system_array(world, world->post_load_systems);
-    rematch_system_array(world, world->pre_update_systems);
-    rematch_system_array(world, world->on_update_systems);
-    rematch_system_array(world, world->on_validate_systems);
-    rematch_system_array(world, world->post_update_systems);
-    rematch_system_array(world, world->pre_store_systems);
-    rematch_system_array(world, world->on_store_systems);    
-    rematch_system_array(world, world->inactive_systems);   
-}
-
-static
-void revalidate_system_array(
-    ecs_world_t *world,
-    ecs_vector_t *systems)
-{
-    uint32_t i, count = ecs_vector_count(systems);
-    ecs_entity_t *buffer = ecs_vector_first(systems);
-
-    for (i = 0; i < count; i ++) {
-        ecs_entity_t system = buffer[i];
-        ecs_revalidate_system_refs(world, system);
-    }
-}
-
-static
-void revalidate_system_refs(
-    ecs_world_t *world)
-{
-    revalidate_system_array(world, world->on_load_systems);
-    revalidate_system_array(world, world->post_load_systems);
-    revalidate_system_array(world, world->pre_update_systems);
-    revalidate_system_array(world, world->on_update_systems);
-    revalidate_system_array(world, world->on_validate_systems);
-    revalidate_system_array(world, world->post_update_systems);
-    revalidate_system_array(world, world->pre_store_systems);
-    revalidate_system_array(world, world->on_store_systems);    
-    revalidate_system_array(world, world->inactive_systems);   
-}
-
-static
 void run_single_thread_stage(
     ecs_world_t *world,
     ecs_vector_t *systems)
@@ -1068,16 +886,6 @@ bool ecs_progress(
     world->merge_time = 0;
 
     bool has_threads = ecs_vector_count(world->worker_threads) != 0;
-
-    if (world->should_match) {
-        rematch_systems(world);
-        world->should_match = false;
-    }
-
-    if (world->should_resolve) {
-        revalidate_system_refs(world);
-        world->should_resolve = false;
-    }    
 
     /* -- System execution starts here -- */
 

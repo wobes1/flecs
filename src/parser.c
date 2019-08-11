@@ -66,15 +66,82 @@ char* parse_complex_elem(
     return bptr;
 }
 
+static
+bool has_refs(
+    ecs_signature_t *sig)
+{
+    uint32_t i, count = ecs_vector_count(sig->columns);
+    ecs_signature_column_t *columns = ecs_vector_first(sig->columns);
+
+    for (i = 0; i < count; i ++) {
+        ecs_signature_from_kind_t from = columns[i].from;
+
+        if (columns[i].op == EcsOperNot && from == EcsFromEmpty) {
+            /* Special case: if oper kind is Not and the query contained a
+             * shared expression, the expression is translated to FromId to
+             * prevent resolving the ref */
+            return true;
+
+        } else if (from != EcsFromSelf && from != EcsFromEmpty) {
+            /* If the component is not from the entity being iterated over, and
+             * the column is not just passing an id, it must be a reference to
+             * another entity. */
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static
+void postprocess(
+    ecs_world_t *world,
+    ecs_signature_t *sig)
+{
+    int i, count = ecs_vector_count(sig->columns);
+    ecs_signature_column_t *columns = ecs_vector_first(sig->columns);
+
+    for (i = 0; i < count; i ++) {
+        ecs_signature_column_t *column = &columns[i];
+        ecs_signature_op_kind_t op = column->op; 
+
+        if (op == EcsOperOr) {
+            if (ecs_type_has_entity_intern(
+                world, column->is.type, 
+                ecs_entity(EcsDisabled), false))
+            {
+                sig->match_disabled = true;
+            }
+
+            if (ecs_type_has_entity_intern(
+                world, column->is.type, 
+                ecs_entity(EcsPrefab), false))
+            {
+                sig->match_prefab = true;
+            }            
+        } else if (op == EcsOperAnd || op == EcsOperOptional) {
+            if (column->is.component == ecs_entity(EcsDisabled)) {
+                sig->match_disabled = true;
+            } else if (column->is.component == ecs_entity(EcsPrefab)) {
+                sig->match_prefab = true;
+            }
+        }
+
+        if (sig->match_prefab && sig->match_disabled) {
+            break;
+        }
+    }
+}
+
 /* -- Private functions -- */
 
 /* Does expression require that a system matches with tables */
 bool ecs_needs_tables(
     ecs_world_t *world,
-    ecs_signature_t sig)
+    ecs_signature_t *sig)
 {    
-    int i, count = ecs_vector_count(sig.columns);
-    ecs_signature_column_t *columns = ecs_vector_first(sig.columns);
+    int i, count = ecs_vector_count(sig->columns);
+    ecs_signature_column_t *columns = ecs_vector_first(sig->columns);
 
     for (i = 0; i < count; i ++) {
         ecs_signature_column_t *elem = &columns[i];
@@ -88,9 +155,9 @@ bool ecs_needs_tables(
 
 /** Count components in a signature */
 uint32_t ecs_signature_columns_count(
-    ecs_signature_t sig)
+    ecs_signature_t *sig)
 {
-    return ecs_vector_count(sig.columns);
+    return ecs_vector_count(sig->columns);
 }
 
 /** Parse component expression */
@@ -302,5 +369,20 @@ ecs_signature_t ecs_parse_signature(
     ecs_parse_component_expr(
         world, signature, ecs_parse_signature_action, &result);
 
+    postprocess(world, &result);
+
+    result.has_refs = has_refs(&result);
+    result.owned = true;
+
     return result;
+}
+
+void ecs_signature_free(
+    ecs_signature_t *sig)
+{
+    if (sig->owned) {
+        ecs_vector_free(sig->columns);
+        sig->columns = NULL;
+        sig->owned = false;
+    }
 }
