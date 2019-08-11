@@ -1,6 +1,18 @@
 
 #include "flecs_private.h"
 
+const ecs_vector_params_t matched_table_params = {
+    .element_size = sizeof(ecs_matched_table_t)
+};
+
+const ecs_vector_params_t system_column_params = {
+    .element_size = sizeof(ecs_signature_column_t)
+};
+
+const ecs_vector_params_t reference_params = {
+    .element_size = sizeof(ecs_reference_t)
+};
+
 static
 ecs_entity_t components_contains(
     ecs_world_t *world,
@@ -540,7 +552,7 @@ ecs_query_iter_t ecs_query_iter(
 }
 
 /* Return next table */
-ecs_rows_t* ecs_query_next(
+bool ecs_query_next(
     ecs_query_iter_t *iter)
 {
     ecs_query_t *query = iter->query;
@@ -583,7 +595,7 @@ ecs_rows_t* ecs_query_next(
                 }
             } else if (limit) {
                 /* Limit hit: no more entities left to iterate */
-                return NULL;
+                return false;
             }
         }
 
@@ -608,15 +620,15 @@ ecs_rows_t* ecs_query_next(
         
         /* Table is ready to be iterated, return rows struct */
         iter->index = ++ i;
-        return &iter->rows;
+        return true;
 
         rows->frame_offset += count;
 
         /* Iteration was interrupted, return NULL */
         if (rows->interrupted_by) {
-            return NULL;
+            return false;
         }
     }
 
-    return NULL;
+    return false;
 }

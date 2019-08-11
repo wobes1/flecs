@@ -457,10 +457,10 @@ ecs_world_t *ecs_init(void) {
     world->max_handle = 0;
 
     /* Create builtin systems for managing prefab hierarchies */
-    ecs_signature_t sig = ecs_parse_signature(world, "EcsPrefab");
+    ecs_signature_t sig = ecs_new_signature(world, "EcsPrefab");
     ecs_new_system(world, "EcsInitPrefab", EcsOnAdd, &sig, EcsInitPrefab);
     
-    sig = ecs_parse_signature(world, "EcsPrefab");
+    sig = ecs_new_signature(world, "EcsPrefab");
     ecs_new_system(world, "EcsSetPrefab", EcsOnSet, &sig, EcsSetPrefab);
 
     return world;

@@ -1474,7 +1474,7 @@ char* ecs_type_to_expr(
 /* -- Signature API -- */
 
 /** Parse signature */
-ecs_signature_t ecs_parse_signature(
+ecs_signature_t ecs_new_signature(
     ecs_world_t *world,
     const char *signature);
 
@@ -1797,7 +1797,7 @@ ecs_query_iter_t ecs_query_iter(
     uint32_t offset,
     uint32_t limit);
 
-ecs_rows_t* ecs_query_next(
+bool ecs_query_next(
     ecs_query_iter_t *iter);
 
 /** Create a new system.
@@ -2072,7 +2072,7 @@ void _ecs_assert(
  * After the macro, the application will have access to a Move entity variable 
  * which can be accessed through ecs_entity(Move). */
 #define ECS_SYSTEM(world, id, kind, ...) \
-    ecs_signature_t id##_sig = ecs_parse_signature(world, #__VA_ARGS__);\
+    ecs_signature_t id##_sig = ecs_new_signature(world, #__VA_ARGS__);\
     ecs_entity_t F##id = ecs_new_system(world, #id, kind, &id##_sig, id);\
     ecs_entity_t id = F##id;\
     (void)id;\

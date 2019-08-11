@@ -1,21 +1,5 @@
 #include "flecs_private.h"
 
-const ecs_vector_params_t matched_table_params = {
-    .element_size = sizeof(ecs_matched_table_t)
-};
-
-const ecs_vector_params_t system_column_params = {
-    .element_size = sizeof(ecs_signature_column_t)
-};
-
-const ecs_vector_params_t reference_params = {
-    .element_size = sizeof(ecs_reference_t)
-};
-
-const ecs_vector_params_t matched_column_params = {
-    .element_size = sizeof(uint32_t)
-};
-
 ecs_entity_t ecs_col_system_new(
     ecs_world_t *world,
     const char *id,
@@ -155,9 +139,8 @@ ecs_entity_t ecs_run(
     qiter.rows.world_time = world->world_time;
     qiter.rows.frame_offset = offset;
 
-    ecs_rows_t *row;
-    while ((row = ecs_query_next(&qiter))) {
-        action(row);
+    while (ecs_query_next(&qiter)) {
+        action(&qiter.rows);
     }
 
     if (measure_time) {

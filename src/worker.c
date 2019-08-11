@@ -257,8 +257,10 @@ void ecs_run_jobs(
 
     for (i = 0; i < job_count; i ++) {
         ecs_run(
-            (ecs_world_t*)thread, jobs[i]->system, world->delta_time, jobs[i]->offset, jobs[i]->limit, NULL);
+            (ecs_world_t*)thread, jobs[i]->system, world->delta_time, 
+            jobs[i]->offset, jobs[i]->limit, NULL);
     }
+    
     thread->job_count = 0;
 
     if (world->jobs_finished != ecs_vector_count(world->worker_threads) - 1) {

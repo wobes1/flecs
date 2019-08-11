@@ -272,7 +272,7 @@ int ecs_parse_component_expr(
 }
 
 /** Parse signature expression */
-int ecs_parse_signature_action(
+int ecs_new_signature_action(
     ecs_world_t *world,
     ecs_signature_from_kind_t from,
     ecs_signature_op_kind_t op,
@@ -358,7 +358,7 @@ error:
     return -1;
 }
 
-ecs_signature_t ecs_parse_signature(
+ecs_signature_t ecs_new_signature(
     ecs_world_t *world,
     const char *signature)
 {
@@ -367,7 +367,7 @@ ecs_signature_t ecs_parse_signature(
     };
 
     ecs_parse_component_expr(
-        world, signature, ecs_parse_signature_action, &result);
+        world, signature, ecs_new_signature_action, &result);
 
     postprocess(world, &result);
 

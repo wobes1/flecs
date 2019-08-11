@@ -312,7 +312,7 @@ void ecs_notify_row_system(
     uint32_t limit);
 
 /* Callback for parse_component_expr that stores result as ecs_signature_column_t's */
-int ecs_parse_signature_action(
+int ecs_new_signature_action(
     ecs_world_t *world,
     ecs_signature_from_kind_t elem_kind,
     ecs_signature_op_kind_t oper_kind,
