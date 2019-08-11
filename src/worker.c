@@ -29,13 +29,12 @@ void* ecs_worker(void *arg) {
         ecs_os_mutex_unlock(world->thread_mutex);
 
         for (i = 0; i < job_count; i ++) {
-            ecs_run_w_filter(
+            ecs_run(
                 (ecs_world_t*)thread, /* magic */
                 jobs[i]->system, 
                 world->delta_time, 
                 jobs[i]->offset, 
                 jobs[i]->limit, 
-                0, 
                 NULL);
         }
 
@@ -257,8 +256,8 @@ void ecs_run_jobs(
     uint32_t i, job_count = thread->job_count;
 
     for (i = 0; i < job_count; i ++) {
-        ecs_run_w_filter(
-            (ecs_world_t*)thread, jobs[i]->system, world->delta_time, jobs[i]->offset, jobs[i]->limit, 0, NULL);
+        ecs_run(
+            (ecs_world_t*)thread, jobs[i]->system, world->delta_time, jobs[i]->offset, jobs[i]->limit, NULL);
     }
     thread->job_count = 0;
 

@@ -1578,41 +1578,9 @@ ecs_entity_t ecs_run(
     ecs_world_t *world,
     ecs_entity_t system,
     float delta_time,
-    void *param);
-
-/** Run system with offset/limit and type filter.
- * This operation is the same as ecs_run, but filters the entities that will be
- * iterated by the system.
- * 
- * Entities can be filtered in two ways. Offset and limit control the range of
- * entities that is iterated over. The range is applied to all entities matched
- * with the system, thus may cover multiple archetypes.
- * 
- * The type filter controls which entity types the system will evaluate. Only
- * types that contain all components in the type filter will be iterated over. A
- * type filter is only evaluated once per table, which makes filtering cheap if
- * the number of entities is large and the number of tables is small, but not as
- * cheap as filtering in the system signature.
- * 
- * @param world The world.
- * @param system The system to invoke.
- * @param delta_time: The time passed since the last system invocation.
- * @param filter A component or type to filter matched entities.
- * @param param A user-defined parameter to pass to the system.
- * @returns handle to last evaluated entity if system was interrupted.
- */
-FLECS_EXPORT
-ecs_entity_t _ecs_run_w_filter(
-    ecs_world_t *world,
-    ecs_entity_t system,
-    float delta_time,
     uint32_t offset,
     uint32_t limit,
-    ecs_type_t filter,
     void *param);
-
-#define ecs_run_w_filter(world, system, delta_time, offset, limit, type, param)\
-    _ecs_run_w_filter(world, system, delta_time, offset, limit, T##type, param)
 
 /** Obtain a pointer to column data. 
  * This function is to be used inside a system to obtain data from a column in

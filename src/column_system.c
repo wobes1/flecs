@@ -106,13 +106,12 @@ bool should_run(
     return true;
 }
 
-ecs_entity_t _ecs_run_w_filter(
+ecs_entity_t ecs_run(
     ecs_world_t *world,
     ecs_entity_t system,
     float delta_time,
     uint32_t offset,
     uint32_t limit,
-    ecs_type_t filter,
     void *param)
 {
     ecs_world_t *real_world = world;
@@ -156,10 +155,9 @@ ecs_entity_t _ecs_run_w_filter(
     qiter.rows.world_time = world->world_time;
     qiter.rows.frame_offset = offset;
 
-    ecs_rows_t *ptr;
-
-    while ((ptr = ecs_query_next(&qiter))) {
-        action(ptr);
+    ecs_rows_t *row;
+    while ((row = ecs_query_next(&qiter))) {
+        action(row);
     }
 
     if (measure_time) {
@@ -167,13 +165,4 @@ ecs_entity_t _ecs_run_w_filter(
     }
 
     return qiter.rows.interrupted_by;
-}
-
-ecs_entity_t ecs_run(
-    ecs_world_t *world,
-    ecs_entity_t system,
-    float delta_time,
-    void *param)
-{
-    return ecs_run_w_filter(world, system, delta_time, 0, 0, 0, param);
 }

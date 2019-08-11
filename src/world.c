@@ -739,7 +739,7 @@ void run_single_thread_stage(
         world->in_progress = true;
 
         for (i = 0; i < system_count; i ++) {
-            ecs_run(world, buffer[i], world->delta_time, NULL);
+            ecs_run(world, buffer[i], world->delta_time, 0, 0, NULL);
         }
 
         if (world->auto_merge) {
