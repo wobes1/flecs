@@ -131,18 +131,6 @@ void bootstrap_types(
     TEcsDisabled = bootstrap_type(world, EEcsDisabled);
 }
 
-void ecs_notify_systems_of_table(
-    ecs_world_t *world,
-    ecs_table_t *table)
-{
-    uint32_t i, count = ecs_sparse_count(world->queries);
-
-    for (i = 0; i < count; i ++) {
-        ecs_query_t *query = ecs_sparse_get(world->queries, ecs_query_t, i);
-        ecs_query_match_table(world, query, table);
-    }
-}
-
 #ifndef NDEBUG
 static
 void no_threading(

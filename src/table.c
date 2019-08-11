@@ -1,6 +1,19 @@
 #include "flecs_private.h"
 
 static
+void match_queries(
+    ecs_world_t *world,
+    ecs_table_t *table)
+{
+    uint32_t i, count = ecs_sparse_count(world->queries);
+
+    for (i = 0; i < count; i ++) {
+        ecs_query_t *query = ecs_sparse_get(world->queries, ecs_query_t, i);
+        ecs_query_match_table(world, query, table);
+    }
+}
+
+static
 ecs_type_t entities_to_type(
     ecs_entity_array_t *entities)
 {
@@ -57,6 +70,8 @@ ecs_table_t *create_table(
     ecs_table_t *result = ecs_sparse_add(world->tables, ecs_table_t);
 
     init_table(world, result, entities);
+
+    match_queries(world, result);
 
     return result;
 }

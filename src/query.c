@@ -510,7 +510,6 @@ void ecs_query_free(
     ecs_vector_free(query->tables);
 }
 
-/** Match new table against system (table is created after system) */
 void ecs_query_match_table(
     ecs_world_t *world,
     ecs_query_t *query,
@@ -519,4 +518,105 @@ void ecs_query_match_table(
     if (match_table(world, table, query)) {
         add_table(world, query, table);
     }
+}
+
+/* Create query iterator */
+ecs_query_iter_t ecs_query_iter(
+    ecs_query_t *query,
+    uint32_t offset,
+    uint32_t limit)
+{
+    return (ecs_query_iter_t){
+        .query = query,
+        .offset = offset,
+        .limit = limit,
+        .remaining = limit,
+        .index = 0,
+        .rows = {
+            .table_count = ecs_vector_count(query->tables),
+            .column_count = ecs_vector_count(query->sig.columns)
+        }
+    };
+}
+
+/* Return next table */
+ecs_rows_t* ecs_query_next(
+    ecs_query_iter_t *iter)
+{
+    ecs_query_t *query = iter->query;
+    ecs_rows_t *rows = &iter->rows;
+    uint32_t table_count = ecs_vector_count(query->tables);
+    ecs_matched_table_t *tables = ecs_vector_first(query->tables);
+
+    uint32_t offset = iter->offset;
+    uint32_t limit = iter->limit;
+    uint32_t remaining = iter->remaining;
+    bool offset_limit = (offset | limit) != 0;
+
+    int i;
+    for (i = iter->index; i < table_count; i ++) {
+        ecs_matched_table_t *table = &tables[i];
+
+        ecs_table_t *world_table = table->table;
+        ecs_column_t *table_data = world_table->columns;
+        uint32_t first = 0, count = ecs_column_count(world_table->columns);
+
+        if (offset_limit) {
+            if (offset) {
+                if (offset > count) {
+                    /* No entities to iterate in current table */
+                    iter->offset -= count;
+                    continue;
+                } else {
+                    first += offset;
+                    count -= offset;
+                    offset = 0;
+                }
+            }
+
+            if (remaining) {
+                if (remaining > count) {
+                    iter->remaining -= count;
+                } else {
+                    count = limit;
+                    iter->remaining = 0;
+                }
+            } else if (limit) {
+                /* Limit hit: no more entities left to iterate */
+                return NULL;
+            }
+        }
+
+        if (!count) {
+            /* No entities to iterate in current table */
+            continue;
+        }
+
+        rows->table = world_table;
+        rows->columns =  table->columns;
+        rows->table_columns = table_data;
+        
+        rows->components = table->components;
+        rows->references = ecs_vector_first(table->references);
+
+        rows->offset = first;
+        rows->count = count;
+
+        ecs_entity_t *entity_buffer = 
+                ecs_vector_first(((ecs_column_t*)rows->table_columns)[0].data);
+        rows->entities = &entity_buffer[first];
+        
+        /* Table is ready to be iterated, return rows struct */
+        iter->index = ++ i;
+        return &iter->rows;
+
+        rows->frame_offset += count;
+
+        /* Iteration was interrupted, return NULL */
+        if (rows->interrupted_by) {
+            return NULL;
+        }
+    }
+
+    return NULL;
 }

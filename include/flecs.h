@@ -125,23 +125,37 @@ typedef struct ecs_rows_t {
     ecs_world_t *world;          /* Current world */
     ecs_entity_t system;         /* Handle to current system */
 
-    int32_t *columns;    /* Indices mapping system params to columns and refs */
-    uint16_t column_count;       /* Number of columns for system */
+    uint32_t table_count;        /* Number of matched tables */
+    uint16_t column_count;       /* Number of columns in query */
+
     void *table;                 /* Opaque structure with reference to table */
+    int32_t *columns;    /* Indices mapping system params to columns and refs */
     void *table_columns;         /* Opaque structure with table column data */
-    ecs_reference_t *references; /* References to other entities */
+
     ecs_entity_t *components;    /* System-table specific list of components */
-    ecs_entity_t *entities;      /* Entity row */
+    ecs_entity_t *entities;      /* Array with entity ids */
+    ecs_reference_t *references; /* References to other entities */
 
     void *param;                 /* Userdata passed to on-demand system */
+
     float delta_time;            /* Time elapsed since last frame */
     float world_time;            /* Time elapsed since start of simulation */
+
     uint32_t frame_offset;       /* Offset relative to frame */
     uint32_t offset;             /* Offset relative to current table */
     uint32_t count;              /* Number of rows to process by system */
 
     ecs_entity_t interrupted_by; /* When set, system execution is interrupted */
 } ecs_rows_t;
+
+typedef struct ecs_query_iter_t {
+    ecs_query_t *query;
+    uint32_t offset;
+    uint32_t limit;
+    uint32_t remaining;
+    uint32_t index;
+    ecs_rows_t rows;
+} ecs_query_iter_t;
 
 /** System action callback type */
 typedef void (*ecs_system_action_t)(
@@ -1808,6 +1822,15 @@ ecs_entity_t ecs_new_component(
 ecs_query_t* ecs_new_query(
     ecs_world_t *world,
     ecs_signature_t *signature);
+
+/* Create query iterator */
+ecs_query_iter_t ecs_query_iter(
+    ecs_query_t *query,
+    uint32_t offset,
+    uint32_t limit);
+
+ecs_rows_t* ecs_query_next(
+    ecs_query_iter_t *iter);
 
 /** Create a new system.
  * This operation creates a new system with a specified id, kind and action.

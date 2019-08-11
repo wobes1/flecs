@@ -132,16 +132,8 @@ ecs_entity_t _ecs_run_w_filter(
 
     ecs_get_stage(&real_world);
 
-    float system_delta_time = delta_time + system_data->time_passed;
     float period = system_data->period;
     bool measure_time = real_world->measure_system_time;
-
-    ecs_matched_table_t *tables = ecs_vector_first(system_data->query->tables);
-    uint32_t i, table_count = ecs_vector_count(system_data->query->tables);
-
-    if (!table_count) {
-        return 0;
-    }
 
     if (period) {
         if (!should_run(system_data, period, delta_time)) {
@@ -154,97 +146,27 @@ ecs_entity_t _ecs_run_w_filter(
         ecs_os_get_time(&time_start);
     }
 
-    uint32_t column_count = ecs_vector_count(system_data->query->sig.columns);
-    ecs_entity_t interrupted_by = 0;
     ecs_system_action_t action = system_data->base.action;
-    bool offset_limit = (offset | limit) != 0;
-    bool limit_set = limit != 0;
+    
+    ecs_query_iter_t qiter = ecs_query_iter(system_data->query, offset, limit);
+    qiter.rows.world = world;
+    qiter.rows.system = system;
+    qiter.rows.param = param;
+    qiter.rows.delta_time = delta_time + system_data->time_passed;
+    qiter.rows.world_time = world->world_time;
+    qiter.rows.frame_offset = offset;
 
-    ecs_rows_t info = {
-        .world = world,
-        .system = system,
-        .param = param,
-        .column_count = column_count,
-        .delta_time = system_delta_time,
-        .world_time = world->world_time,
-        .frame_offset = offset
-    };
+    ecs_rows_t *ptr;
 
-    for (i = 0; i < table_count; i ++) {
-        ecs_matched_table_t *table = &tables[i];
-
-        ecs_table_t *world_table = table->table;
-        ecs_column_t *table_data = world_table->columns;
-        uint32_t first = 0, count = ecs_column_count(world_table->columns);
-
-        if (filter) {
-            if (!ecs_type_contains(
-                real_world, world_table->type, filter, true, true))
-            {
-                continue;
-            }
-        }
-
-        if (offset_limit) {
-            if (offset) {
-                if (offset > count) {
-                    offset -= count;
-                    continue;
-                } else {
-                    first += offset;
-                    count -= offset;
-                    offset = 0;
-                }
-            }
-
-            if (limit) {
-                if (limit > count) {
-                    limit -= count;
-                } else {
-                    count = limit;
-                    limit = 0;
-                }
-            } else if (limit_set) {
-                break;
-            }
-        }
-
-        if (!count) {
-            continue;
-        }
-
-        if (table->references) {
-            info.references = ecs_vector_first(table->references);
-        } else {
-            info.references = NULL;
-        }
-
-        info.columns =  table->columns;
-        info.table = world_table;
-        info.table_columns = table_data;
-        info.components = table->components;
-        info.offset = first;
-        info.count = count;
-
-        ecs_entity_t *entity_buffer = 
-                ecs_vector_first(((ecs_column_t*)info.table_columns)[0].data);
-        info.entities = &entity_buffer[first];
-        
-        action(&info);
-
-        info.frame_offset += count;
-
-        if (info.interrupted_by) {
-            interrupted_by = info.interrupted_by;
-            break;
-        }
+    while ((ptr = ecs_query_next(&qiter))) {
+        action(ptr);
     }
 
     if (measure_time) {
         system_data->base.time_spent += ecs_time_measure(&time_start);
     }
 
-    return interrupted_by;
+    return qiter.rows.interrupted_by;
 }
 
 ecs_entity_t ecs_run(
