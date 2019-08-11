@@ -503,6 +503,9 @@ ecs_query_t* ecs_new_query(
     ecs_signature_t *sig)
 {
     ecs_query_t *result = ecs_sparse_add(world->queries, ecs_query_t);
+    
+    memset(result, 0, sizeof(ecs_query_t));
+    result->world = world;
     result->sig = *sig;
 
     postprocess(world, result);
@@ -545,6 +548,7 @@ ecs_query_iter_t ecs_query_iter(
         .remaining = limit,
         .index = 0,
         .rows = {
+            .world = query->world,
             .table_count = ecs_vector_count(query->tables),
             .column_count = ecs_vector_count(query->sig.columns)
         }

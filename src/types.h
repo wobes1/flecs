@@ -119,7 +119,7 @@ struct ecs_table_t {
 
     ecs_edge_t *edges;                /* Edges to other tables */
 
-    ecs_vector_t *on_frame;           /* Column systems matched with table */
+    ecs_vector_t *queries;            /* Column systems matched with table */
     ecs_vector_t *on_new;             /* Systems executed when new entity is
                                        * created in this table. */
 
@@ -207,6 +207,9 @@ struct ecs_query_t {
     /* Signature of query */
     ecs_signature_t sig;
 
+    /* Reference to world */
+    ecs_world_t *world;
+
     /* Tables matched with query */
     ecs_vector_t *tables;
 
@@ -220,7 +223,8 @@ struct ecs_query_t {
     ecs_type_t and_from_shared;    /* Which components are required from entity */
     ecs_type_t and_from_system;    /* Used to auto-add components to system */
 
-    ecs_entity_t system;           /* Handle to system */
+    /* Handle to system (optional) */
+    ecs_entity_t system;
 };
 
 /** Base type for a system */

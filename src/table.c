@@ -56,7 +56,7 @@ void init_table(
     
     init_edges(table);
 
-    table->on_frame = NULL;
+    table->queries = NULL;
     table->on_new = NULL;
 
     table->flags = 0;
@@ -176,7 +176,7 @@ void ecs_table_fini(
     ecs_column_free(world, table, table->columns);
     ecs_vector_free((ecs_vector_t*)table->type);
     free(table->edges);
-    ecs_vector_free(table->on_frame);
+    ecs_vector_free(table->queries);
     ecs_vector_free(table->on_new);
 }
 

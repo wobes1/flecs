@@ -2111,19 +2111,12 @@ void _ecs_assert(
 /* -- Utilities for importing handles from within systems -- */
 
 #define ECS_COLUMN(rows, type, id, column)\
-    type *id = ecs_column(rows, type, column)
-
-#define ECS_COLUMN_COMPONENT(rows, id, column)\
     ECS_ENTITY_VAR(id) = ecs_column_entity(rows, column);\
     ECS_TYPE_VAR(id) = ecs_column_type(rows, column);\
+    type *id = ecs_column(rows, type, column);\
     (void)ecs_entity(id);\
-    (void)ecs_type(id)
-
-#define ECS_COLUMN_ENTITY(rows, id, column)\
-    ecs_entity_t id = ecs_column_entity(rows, column);\
-    ECS_TYPE_VAR(id) = ecs_column_type(rows, column);\
-    (void)id;\
-    (void)ecs_type(id)
+    (void)ecs_type(id);\
+    (void)id;
 
 
 /* -- Module convenience macro's -- */
