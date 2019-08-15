@@ -10,6 +10,10 @@ const ecs_vector_params_t handle_arr_params = {
     .element_size = sizeof(ecs_entity_t)
 };
 
+const ecs_vector_params_t type_data_params = {
+    .element_size = sizeof(ecs_type_t)
+};
+
 const ecs_vector_params_t stage_arr_params = {
     .element_size = sizeof(ecs_stage_t)
 };
@@ -381,6 +385,9 @@ ecs_world_t *ecs_init(void) {
     world->on_demand_systems = ecs_vector_new(&handle_arr_params, 0);
 
     world->queries = ecs_sparse_new(ecs_query_t, 0);
+    world->container_and_filters = (ecs_type_filter_t){0};
+    world->container_not_filters = (ecs_type_filter_t){0};
+    world->cascade_filters = NULL;
 
     world->tasks = ecs_vector_new(&handle_arr_params, 0);
     world->fini_tasks = ecs_vector_new(&handle_arr_params, 0);

@@ -403,7 +403,7 @@ bool match_table(
         }
     }        
 
-    type = query->not_from_component;
+    type = query->not_from_container;
     if (type && components_contains(
         world, table_type, type, NULL, false))
     {
@@ -426,6 +426,35 @@ void match_tables(
 
         if (match_table(world, table, query)) {
             add_table(world, query, table);
+        }
+    }
+}
+
+static
+void register_filter(
+    ecs_world_t *world,
+    ecs_type_filter_t *filter,
+    ecs_type_t type)
+{
+    ecs_entity_t *array = ecs_vector_first(type);
+    uint32_t i, count = ecs_vector_count(type);
+
+    for (i = 0; i < count; i ++) {
+        if (!filter->edges) {
+            filter->edges = ecs_sparse_new(ecs_type_filter_t, 1000);
+        }
+
+        ecs_type_t to_register = ecs_type_find(world, array, i + 1);
+        ecs_entity_t e = array[i];
+
+        bool is_new = false;
+        ecs_type_filter_t *el = ecs_sparse_get_or_set_sparse(
+            filter->edges, ecs_type_filter_t, e, &is_new);
+
+        if (is_new) {
+            el->type = to_register;
+            el->edges = NULL;
+            filter = el;
         }
     }
 }
@@ -468,10 +497,10 @@ void postprocess(
                         elem->is.component);                    
             } else if (from == EcsFromEntity) {
                 /* Nothing to be done here */
-            } else {
-                query->not_from_component =
+            } else if (from == EcsFromContainer) {
+                query->not_from_container =
                     ecs_type_add_intern(
-                        world, NULL, query->not_from_component, 
+                        world, NULL, query->not_from_container, 
                         elem->is.component);
             }
         } else if (op == EcsOperAnd) {
@@ -491,8 +520,21 @@ void postprocess(
                 query->and_from_system = ecs_type_add_intern(
                     world, NULL, query->and_from_system, 
                     elem->is.component);
+            } else if (from == EcsFromContainer) {
+                query->and_from_container = ecs_type_add_intern(
+                    world, NULL, query->and_from_container, 
+                    elem->is.component);
             }
         }
+    }
+
+    /* Register container filters with world */
+    if (query->and_from_container) {
+        register_filter(
+            world, &world->container_and_filters, query->and_from_container);
+
+        register_filter(
+            world, &world->container_not_filters, query->not_from_container);
     }
 }
 

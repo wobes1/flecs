@@ -114,16 +114,18 @@ typedef struct ecs_edge_t {
 /* A table stores component data. Tables are stored in a graph that is traversed
  * when adding/removing components. */
 struct ecs_table_t {
-    ecs_type_t type;                  /* Type containing component ids */
-    ecs_column_t *columns;            /* Columns storing components of array */
+    ecs_type_t type;              /* Type containing component ids */
+    ecs_column_t *columns;        /* Columns storing components of array */
 
-    ecs_edge_t *edges;                /* Edges to other tables */
+    ecs_edge_t *edges;            /* Edges to other tables */
 
-    ecs_vector_t *queries;            /* Column systems matched with table */
-    ecs_vector_t *on_new;             /* Systems executed when new entity is
-                                       * created in this table. */
+    ecs_vector_t *queries;        /* Column systems matched with table */
+    ecs_vector_t *on_new;         /* Systems executed when new entity is
+                                   * created in this table. */
 
-    uint32_t flags;                   /* Flags for testing table properties */
+    ecs_edge_t container;         /* Navigate when adding/removing parents */
+
+    uint32_t flags;               /* Flags for testing table properties */
 };
 
 /* A record contains the table and row at which the entity is stored. */
@@ -217,11 +219,12 @@ struct ecs_query_t {
     ecs_type_t not_from_self;      /* Exclude components from self */
     ecs_type_t not_from_owned;     /* Exclude components from self only if owned */
     ecs_type_t not_from_shared;    /* Exclude components from self only if shared */
-    ecs_type_t not_from_component; /* Exclude components from components */
+    ecs_type_t not_from_container; /* Exclude components from components */
     ecs_type_t and_from_self;      /* Which components are required from entity */
     ecs_type_t and_from_owned;     /* Which components are required from entity */
     ecs_type_t and_from_shared;    /* Which components are required from entity */
     ecs_type_t and_from_system;    /* Used to auto-add components to system */
+    ecs_type_t and_from_container; /* Used to auto-add components to system */
 
     /* Handle to system (optional) */
     ecs_entity_t system;
@@ -369,6 +372,12 @@ typedef struct ecs_entity_array_t {
     int32_t count;
 } ecs_entity_array_t;
 
+/** Hierarchical filter used to keep track of types for which a query exists. */
+typedef struct ecs_type_filter_t {
+    ecs_sparse_t *edges; /* sparse<ecs_type_filter_t>, indexed by component */
+    ecs_type_t type;
+} ecs_type_filter_t;
+
 
 /* -- World -- */
 
@@ -395,7 +404,20 @@ struct ecs_world {
     ecs_vector_t *on_demand_systems;  
     ecs_vector_t *inactive_systems;   
 
+    /* --  Queries -- */
+
     ecs_sparse_t *queries;
+
+    /* Keep track of components used in CONTAINER columns. This information is
+     * used to fragment tables so that queries can be matched with the tables
+     * that contain exactly what is requested, while not fragmenting more than
+     * necessary. */
+    ecs_type_filter_t container_and_filters;
+    ecs_type_filter_t container_not_filters;
+
+    /* Systems can only have one CASCADE column, so we can store the entire
+     * filter in a single type. */
+    ecs_type_t cascade_filters;
 
 
     /* -- Tasks -- */
@@ -494,5 +516,6 @@ extern const ecs_vector_params_t system_column_params;
 extern const ecs_vector_params_t matched_table_params;
 extern const ecs_vector_params_t matched_column_params;
 extern const ecs_vector_params_t reference_params;
+extern const ecs_vector_params_t type_params;
 
 #endif

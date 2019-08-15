@@ -106,6 +106,9 @@ void postprocess(
         ecs_signature_op_kind_t op = column->op; 
 
         if (op == EcsOperOr) {
+            /* If the signature explicitly indicates interest in EcsDisabled,
+             * signal that disabled entities should be matched. By default,
+             * disabled entities are not matched. */
             if (ecs_type_has_entity_intern(
                 world, column->is.type, 
                 ecs_entity(EcsDisabled), false))
@@ -113,6 +116,9 @@ void postprocess(
                 sig->match_disabled = true;
             }
 
+            /* If the signature explicitly indicates interest in EcsPrefab,
+             * signal that disabled entities should be matched. By default,
+             * prefab entities are not matched. */
             if (ecs_type_has_entity_intern(
                 world, column->is.type, 
                 ecs_entity(EcsPrefab), false))
