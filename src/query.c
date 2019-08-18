@@ -433,28 +433,15 @@ void match_tables(
 static
 void register_filter(
     ecs_world_t *world,
-    ecs_type_filter_t *filter,
     ecs_type_t type)
 {
     ecs_entity_t *array = ecs_vector_first(type);
     uint32_t i, count = ecs_vector_count(type);
 
     for (i = 0; i < count; i ++) {
-        if (!filter->edges) {
-            filter->edges = ecs_sparse_new(ecs_type_filter_t, 1000);
-        }
-
-        ecs_type_t to_register = ecs_type_find(world, array, i + 1);
         ecs_entity_t e = array[i];
-
-        bool is_new = false;
-        ecs_type_filter_t *el = ecs_sparse_get_or_set_sparse(
-            filter->edges, ecs_type_filter_t, e, &is_new);
-
-        if (is_new) {
-            el->type = to_register;
-            el->edges = NULL;
-            filter = el;
+        if (!world->container_filter_map[e]) {
+            world->container_filter_map[e] = ++ world->container_filter_count;
         }
     }
 }
@@ -531,10 +518,10 @@ void postprocess(
     /* Register container filters with world */
     if (query->and_from_container) {
         register_filter(
-            world, &world->container_and_filters, query->and_from_container);
+            world, query->and_from_container);
 
         register_filter(
-            world, &world->container_not_filters, query->not_from_container);
+            world, query->not_from_container);
     }
 }
 
@@ -614,9 +601,13 @@ bool ecs_query_next(
     int i;
     for (i = iter->index; i < table_count; i ++) {
         ecs_matched_table_t *table = &tables[i];
-
         ecs_table_t *world_table = table->table;
         ecs_column_t *table_data = world_table->columns;
+
+        if (!world_table->columns) {
+            continue;
+        }
+
         uint32_t first = 0, count = ecs_column_count(world_table->columns);
 
         if (offset_limit) {

@@ -385,9 +385,8 @@ ecs_world_t *ecs_init(void) {
     world->on_demand_systems = ecs_vector_new(&handle_arr_params, 0);
 
     world->queries = ecs_sparse_new(ecs_query_t, 0);
-    world->container_and_filters = (ecs_type_filter_t){0};
-    world->container_not_filters = (ecs_type_filter_t){0};
-    world->cascade_filters = NULL;
+    world->container_filter_map = ecs_os_calloc(sizeof(uint8_t), ECS_MAX_COMPONENTS);
+    world->container_filter_count = 0;
 
     world->tasks = ecs_vector_new(&handle_arr_params, 0);
     world->fini_tasks = ecs_vector_new(&handle_arr_params, 0);

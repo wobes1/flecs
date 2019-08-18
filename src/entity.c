@@ -949,16 +949,23 @@ void ecs_add_remove_intern(
 
 /* -- Public functions -- */
 
+static
+ecs_entity_t new_entity_handle(
+    ecs_world_t *world)
+{
+    ecs_entity_t entity = ++ world->last_handle;
+    ecs_assert(!world->max_handle || entity <= world->max_handle, 
+        ECS_OUT_OF_RANGE, NULL);
+    return entity;
+}
+
 ecs_entity_t _ecs_new(
     ecs_world_t *world,
     ecs_type_t type)
 {
     ecs_assert(world != NULL, ECS_INVALID_PARAMETER, NULL);
-    ecs_stage_t *stage = ecs_get_stage(&world);
-
-    ecs_entity_t entity = ++ world->last_handle;
-    ecs_assert(!world->max_handle || entity <= world->max_handle, 
-        ECS_OUT_OF_RANGE, NULL);
+    ecs_stage_t *stage = ecs_get_stage(&world);    
+    ecs_entity_t entity = new_entity_handle(world);
 
     if (type) {
         ecs_entity_array_t entities = {
@@ -1024,14 +1031,34 @@ ecs_entity_t _ecs_new_child(
     ecs_type_t type)
 {
     ecs_assert(world != NULL, ECS_INVALID_PARAMETER, NULL);
+    ecs_stage_t *stage = ecs_get_stage(&world);    
+    ecs_entity_t entity = new_entity_handle(world);
+    ecs_table_t *table = NULL;;
+    ecs_entity_array_t entities = {
+        .array = ecs_vector_first(type),
+        .count = ecs_vector_count(type)
+    };    
 
-    ecs_type_t full_type = type;
-    
-    if (parent) {
-        full_type = ecs_type_add(world, full_type, parent | ECS_CHILDOF);
+    if (type) {
+        table = ecs_table_find_or_create(world, stage, &entities);
     }
 
-    return _ecs_new(world, full_type);
+    if (parent) {
+        ecs_entity_t parent_mask = parent | ECS_CHILDOF;
+        ecs_entity_array_t entities = {
+            .array = &parent_mask,
+            .count = 1
+        };
+
+        table = ecs_table_traverse(
+            world, stage, table, &entities, NULL, NULL, NULL);
+    }
+
+    if (table) {
+        new_entity(world, stage, entity, NULL, table, &entities);
+    }
+
+    return entity;
 }
 
 ecs_entity_t _ecs_new_child_w_count(

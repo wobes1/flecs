@@ -94,9 +94,7 @@ typedef struct EcsPrefabBuilder {
 
 /* -- Entity storage -- */
 
-#define EcsTableIsStaged  (1)
-#define EcsTableIsPrefab (2)
-#define EcsTableHasPrefab (4)
+#define EcsTableIsPrefab (1)
 
 typedef struct ecs_table_t ecs_table_t;
 
@@ -106,6 +104,13 @@ typedef struct ecs_column_t {
     uint16_t size;                   /* Column size (saves component lookups) */
 } ecs_column_t;
 
+/** Columns for a table. This type is used by the entity index */
+typedef struct ecs_columns_t {
+    ecs_table_t *table;              /* Backlink to table */
+    ecs_column_t *columns;           /* Columns storing component data */
+} ecs_columns_t;
+
+/** Edge used for traversing the table graph */
 typedef struct ecs_edge_t {
     ecs_table_t *add;
     ecs_table_t *remove;
@@ -115,15 +120,19 @@ typedef struct ecs_edge_t {
  * when adding/removing components. */
 struct ecs_table_t {
     ecs_type_t type;              /* Type containing component ids */
-    ecs_column_t *columns;        /* Columns storing components of array */
+    
+    ecs_column_t *columns;        /* Columns storing component data */
+    ecs_columns_t *child_columns; /* Columns used to store child entities. The
+                                   * index in the column is a bitset derived
+                                   * from the parent components, mapped through
+                                   * the world->container_filter_map. */
 
-    ecs_edge_t *edges;            /* Edges to other tables */
-
-    ecs_vector_t *queries;        /* Column systems matched with table */
+    ecs_vector_t *queries;        /* Queries matched with table */
     ecs_vector_t *on_new;         /* Systems executed when new entity is
                                    * created in this table. */
 
-    ecs_edge_t container;         /* Navigate when adding/removing parents */
+    ecs_edge_t *edges;            /* Edges to other tables */
+    ecs_edge_t parent_edge;       /* Edge to tables with CHILDOF columns */
 
     uint32_t flags;               /* Flags for testing table properties */
 };
@@ -372,12 +381,6 @@ typedef struct ecs_entity_array_t {
     int32_t count;
 } ecs_entity_array_t;
 
-/** Hierarchical filter used to keep track of types for which a query exists. */
-typedef struct ecs_type_filter_t {
-    ecs_sparse_t *edges; /* sparse<ecs_type_filter_t>, indexed by component */
-    ecs_type_t type;
-} ecs_type_filter_t;
-
 
 /* -- World -- */
 
@@ -411,13 +414,16 @@ struct ecs_world {
     /* Keep track of components used in CONTAINER columns. This information is
      * used to fragment tables so that queries can be matched with the tables
      * that contain exactly what is requested, while not fragmenting more than
-     * necessary. */
-    ecs_type_filter_t container_and_filters;
-    ecs_type_filter_t container_not_filters;
-
-    /* Systems can only have one CASCADE column, so we can store the entire
-     * filter in a single type. */
-    ecs_type_t cascade_filters;
+     * necessary.
+     *
+     * The container_filter_map maps a component id (index) to a bit in a container 
+     * filter bitset. If the element is 0, the component is not used in any
+     * container filters. The container_filter_count contains the total number
+     * of filters registered by systems.
+     *
+     * There can be at most 10 components used in CONTAINER filters. */
+    uint8_t *container_filter_map;
+    int8_t container_filter_count;
 
 
     /* -- Tasks -- */
