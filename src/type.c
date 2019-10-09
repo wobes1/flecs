@@ -188,15 +188,16 @@ ecs_type_t ecs_type_merge_intern(
 }
 
 /* O(n) algorithm to check whether type 1 is equal or superset of type 2 */
-ecs_entity_t ecs_type_contains(
+bool ecs_type_contains(
     ecs_world_t *world,
     ecs_type_t type_1,
     ecs_type_t type_2,
     bool match_all,
-    bool match_prefab)
+    bool match_prefab,
+    ecs_entity_t *found)
 {
     if (!type_1) {
-        return 0;
+        return false;
     }
 
     ecs_assert(type_2 != NULL, ECS_INTERNAL_ERROR, NULL);
@@ -216,7 +217,7 @@ ecs_entity_t ecs_type_contains(
         ecs_entity_t e2 = t2_array[i_2] & ECS_ENTITY_MASK;
 
         if (i_1 >= t1_count) {
-            return 0;
+            return false;
         }
 
         e1 = t1_array[i_1] & ECS_ENTITY_MASK;
@@ -225,7 +226,7 @@ ecs_entity_t ecs_type_contains(
             do {
                 i_1 ++;
                 if (i_1 >= t1_count) {
-                    return 0;
+                    return false;
                 }
                 e1 = t1_array[i_1] & ECS_ENTITY_MASK;
             } while (e2 > e1);
@@ -239,12 +240,18 @@ ecs_entity_t ecs_type_contains(
             }
 
             if (e1 != e2) {
-                if (match_all) return 0;
+                if (match_all) {
+                    return false;
+                }
             } else if (!match_all) {
-                return e1;
+                if (found) *found = e1;
+                return true;
             }
         } else {
-            if (!match_all) return e1;
+            if (!match_all) {
+                if (found) *found = e1;
+                return true;
+            }
             i_1 ++;
             if (i_1 < t1_count) {
                 e1 = t1_array[i_1] & ECS_ENTITY_MASK;
@@ -253,9 +260,10 @@ ecs_entity_t ecs_type_contains(
     }
 
     if (match_all) {
-        return e1;
+        if (found) *found = e1;
+        return true;
     } else {
-        return 0;
+        return false;
     }
 }
 
@@ -610,4 +618,56 @@ char* ecs_type_to_expr(
     ecs_vector_free(chbuf);
 
     return result;
+}
+
+bool ecs_type_match_w_filter(
+    ecs_world_t *world,
+    ecs_type_t type,
+    ecs_type_filter_t *filter)
+{
+    if (!filter) {
+        return true;
+    }
+    
+    if (filter->include) {
+        /* If filter kind is exact, types must be the same */
+        if (filter->include_kind == EcsMatchExact) {
+            if (type != filter->include) {
+                return false;
+            }
+
+        /* Default for include_kind is MatchAll */
+        } else if (!ecs_type_contains(world, type, filter->include, 
+            filter->include_kind != EcsMatchAny, false, NULL)) 
+        {
+            return false;
+        }
+    
+    /* If no include filter is specified, make sure that builtin components
+        * aren't matched by default. */
+    } else {
+        if (ecs_type_contains(
+            world, type, world->t_builtins, false, false, NULL))
+        {
+            /* Continue if table contains any of the builtin components */
+            return false;
+        }
+    }
+
+    if (filter->exclude) {
+        /* If filter kind is exact, types must be the same */
+        if (filter->exclude_kind == EcsMatchExact) {
+            if (type == filter->exclude) {
+                return false;
+            }
+        
+        /* Default for exclude_kind is MatchAny */                
+        } else if (ecs_type_contains(world, type, filter->exclude, 
+            filter->exclude_kind == EcsMatchAll, false, NULL))
+        {
+            return false;
+        }
+    }
+
+    return true;
 }

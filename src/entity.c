@@ -716,7 +716,7 @@ uint32_t commit(
             delete_entity(
                 world, stage, entity, old_table, info->columns, info->row, 
                 removed_ptr);
-        }            
+        }
     } else {
         new_table = ecs_table_find_or_create(world, stage, to_add_ptr);
 
@@ -945,6 +945,86 @@ void ecs_add_remove_intern(
     }
 
     commit(world, stage, info, to_add, to_remove, do_set);
+}
+
+void ecs_delete_w_filter(
+    ecs_world_t *world,
+    ecs_type_filter_t *filter)
+{
+    ecs_assert(world != NULL, ECS_INVALID_PARAMETER, NULL);
+    ecs_stage_t *stage = ecs_get_stage(&world);
+
+    ecs_assert(stage == &world->main_stage, ECS_UNSUPPORTED, 
+        "delete_w_filter currently only supported on main stage");
+
+    uint32_t i, count = ecs_sparse_count(world->tables);
+
+    for (i = 0; i < count; i ++) {
+        ecs_table_t *table = ecs_sparse_get(world->tables, ecs_table_t, i);
+        ecs_type_t type = table->type;
+
+        if (!ecs_type_match_w_filter(world, type, filter)) {
+            continue;
+        }
+
+        /* Both filters passed, clear table */
+        ecs_table_clear(world, table);
+    }
+}
+
+void _ecs_add_remove_w_filter(
+    ecs_world_t *world,
+    ecs_type_t to_add,
+    ecs_type_t to_remove,
+    ecs_type_filter_t *filter)
+{
+    ecs_assert(world != NULL, ECS_INVALID_PARAMETER, NULL);
+    ecs_stage_t *stage = ecs_get_stage(&world);
+
+    ecs_assert(stage == &world->main_stage, ECS_UNSUPPORTED, 
+        "remove_w_filter currently only supported on main stage");
+
+    uint32_t i, count = ecs_sparse_count(world->tables);
+
+    for (i = 0; i < count; i ++) {
+        ecs_table_t *table = ecs_sparse_get(world->tables, ecs_table_t, i);
+        ecs_type_t type = table->type;
+
+        /* Skip if the type contains none of the components in to_remove */
+        if (to_remove) {
+            if (!ecs_type_contains(world, type, to_remove, false, false, NULL)) {
+                continue;
+            }
+        }
+
+        /* Skip if the type already contains all of the components in to_add */
+        if (to_add) {
+            if (ecs_type_contains(world, type, to_add, true, false, NULL)) {
+                continue;
+            }            
+        }
+
+        if (!ecs_type_match_w_filter(world, type, filter)) {
+            continue;
+        }
+
+        /* Component(s) must be removed, find table */
+        ecs_type_t dst_type = ecs_type_merge(world, type, to_add, to_remove);
+        if (!dst_type) {
+            /* If this removes all components, clear table */
+            ecs_table_merge(world, NULL, table);
+        } else {
+            ecs_entity_array_t entities = {
+                .array = ecs_vector_first(dst_type),
+                .count = ecs_vector_count(dst_type)
+            };
+            ecs_table_t *dst_table = ecs_table_find_or_create(world, stage, &entities);
+            ecs_assert(dst_table != NULL, ECS_INTERNAL_ERROR, NULL);
+
+            /* Merge table into dst_table */
+            ecs_table_merge(world, dst_table, table);
+        }
+    }    
 }
 
 /* -- Public functions -- */
@@ -1321,24 +1401,32 @@ static
 ecs_entity_t _ecs_set_ptr_intern(
     ecs_world_t *world,
     ecs_entity_t entity,
-    ecs_type_t type,
+    ecs_entity_t component,
     size_t size,
     void *ptr)
 {
     ecs_assert(world != NULL, ECS_INVALID_PARAMETER, NULL);
-    ecs_assert(type != NULL, ECS_INVALID_PARAMETER, NULL);
+    ecs_assert(component != 0, ECS_INVALID_PARAMETER, NULL);
     ecs_assert(!size || ptr != NULL, ECS_INVALID_PARAMETER, NULL);
     ecs_world_t *world_arg = world;
     ecs_stage_t *stage = ecs_get_stage(&world);
-
+    ecs_type_t type = NULL;
     ecs_entity_info_t info = {.entity = entity};
 
-    /* Set only accepts types that hold a single component */
-    ecs_entity_t component = ecs_type_to_entity(world_arg, type);
+    /* If no entity is specified, create one */
+    if (!entity) {
+        type = ecs_type_from_entity(world, component);
+        ecs_assert(type != NULL, ECS_INTERNAL_ERROR, NULL);
+        entity = _ecs_new(world, type);
+    }    
 
     /* If component hasn't been added to entity yet, add it */
     int *dst = ecs_get_ptr_intern(world, stage, &info, component, true, false);
     if (!dst) {
+        if (!type) {
+            type = ecs_type_from_entity(world, component);
+        }
+
         ecs_add_remove_intern(world_arg, &info, type, 0, false);
 
         dst = ecs_get_ptr_intern(world, stage, &info, component, true, false);
@@ -1366,27 +1454,22 @@ ecs_entity_t _ecs_set_ptr_intern(
 ecs_entity_t _ecs_set_ptr(
     ecs_world_t *world,
     ecs_entity_t entity,
-    ecs_type_t type,
+    ecs_entity_t component,
     size_t size,
     void *ptr)
 {
     ecs_assert(world != NULL, ECS_INVALID_PARAMETER, NULL);
 
-    /* If no entity is specified, create one */
-    if (!entity) {
-        entity = _ecs_new(world, type);
-    }
-
-    return _ecs_set_ptr_intern(world, entity, type, size, ptr);
+    return _ecs_set_ptr_intern(world, entity, component, size, ptr);
 }
 
 ecs_entity_t _ecs_set_singleton_ptr(
     ecs_world_t *world,
-    ecs_type_t type,
+    ecs_entity_t component,
     size_t size,
     void *ptr)
 {
-    return _ecs_set_ptr_intern(world, ECS_SINGLETON, type, size, ptr);
+    return _ecs_set_ptr_intern(world, ECS_SINGLETON, component, size, ptr);
 }
 
 static
@@ -1409,7 +1492,7 @@ bool ecs_has_intern(
 
     ecs_world_t *world_arg = world;
     ecs_type_t entity_type = ecs_get_type(world_arg, entity);
-    return ecs_type_contains(world, entity_type, type, match_any, match_prefabs) != 0;
+    return ecs_type_contains(world, entity_type, type, match_any, match_prefabs, NULL);
 }
 
 bool _ecs_has(
@@ -1625,26 +1708,32 @@ ecs_type_t ecs_get_type(
     return result;
 }
 
+uint32_t ecs_count_w_filter(
+    ecs_world_t *world,
+    ecs_type_filter_t *filter)
+{
+    ecs_assert(world != NULL, ECS_INVALID_PARAMETER, NULL);
+
+    ecs_sparse_t *tables = world->tables;
+    uint32_t i, count = ecs_sparse_count(tables);
+    uint32_t result = 0;
+
+    for (i = 0; i < count; i ++) {
+        ecs_table_t *table = ecs_sparse_get(tables, ecs_table_t, i);
+
+        if (ecs_type_match_w_filter(world, table->type, filter)) {
+            result += ecs_vector_count(table->columns[0].data);
+        }
+    }
+    
+    return result; 
+}
+
 uint32_t _ecs_count(
     ecs_world_t *world,
     ecs_type_t type)
 {
-    // if (!type) {
-    //     return 0;
-    // }
-
-    // ecs_sparse_t *tables = world->main_stage.tables;
-    // uint32_t i, count = ecs_sparse_count(tables);
-    // uint32_t result = 0;
-
-    // for (i = 0; i < count; i ++) {
-    //     ecs_table_t *table = ecs_sparse_get(tables, ecs_table_t, i);
-    //     if (ecs_type_contains(world, table->type, type, true, true)) {
-    //         result += ecs_vector_count(table->columns[0].data);
-    //     }
-    // }
-    
-    // return result;
+    return ecs_count_w_filter(world, &(ecs_type_filter_t){.include = type});
 }
 
 ecs_entity_t ecs_new_component(

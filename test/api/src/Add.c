@@ -531,7 +531,7 @@ void OnAdd(ecs_rows_t *rows) {
 }
 
 void AddInProgress(ecs_rows_t *rows) {
-    ECS_COLUMN_COMPONENT(rows, Velocity, 2);
+    ECS_META_COLUMN(rows, Velocity, 2);
 
     int i;
     for (i = 0; i < rows->count; i ++) {

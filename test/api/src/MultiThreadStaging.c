@@ -296,8 +296,13 @@ void Set_random(ecs_rows_t *rows) {
     IterData *ctx = ecs_get_context(rows->world);
 
     ecs_type_t ecs_type(Position) = ctx->component;
+    ecs_entity_t ecs_entity(Position) = ecs_type_to_entity(rows->world, ecs_type(Position));
+
     ecs_type_t ecs_type(Velocity) = ctx->component_2;
+    ecs_entity_t ecs_entity(Velocity) = ecs_type_to_entity(rows->world, ecs_type(Velocity));
+ 
     ecs_type_t ecs_type(Rotation) = ctx->component_3;
+    ecs_entity_t ecs_entity(Rotation) = ecs_type_to_entity(rows->world, ecs_type(Rotation));
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -379,7 +384,7 @@ void InitVelocity(ecs_rows_t *rows) {
 
 static
 void AddVelocity(ecs_rows_t *rows) {
-    ECS_COLUMN_COMPONENT(rows, Velocity, 2);
+    ECS_COLUMN(rows, Velocity, v, 2);
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -414,6 +419,30 @@ void MultiThreadStaging_2_threads_on_add() {
         test_int(v->x, 10);
         test_int(v->y, 20);
     }
+
+    ecs_fini(world);
+}
+
+static
+void New_w_count(ecs_rows_t *rows) {
+    ECS_META_COLUMN(rows, Position, 1);
+
+    ecs_new_w_count(rows->world, Position, 10);
+}
+
+
+void MultiThreadStaging_new_w_count() {
+    ecs_world_t *world = ecs_init();
+
+    ECS_COMPONENT(world, Position);
+
+    ECS_SYSTEM(world, New_w_count, EcsOnUpdate, .Position);
+
+    ecs_set_threads(world, 2);
+
+    ecs_progress(world, 0);
+
+    test_int( ecs_count(world, Position), 10);
 
     ecs_fini(world);
 }

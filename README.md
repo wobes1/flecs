@@ -5,24 +5,71 @@
 
 ![flecs](https://user-images.githubusercontent.com/9919222/54175082-b107f900-4446-11e9-9cbc-91c096f7c0b1.png)
 
-Flecs is a [Fast](https://github.com/SanderMertens/ecs_benchmark) and Lightweight ECS ([Entity Component System](https://github.com/SanderMertens/ecs-faq)). Flecs packs as much punch as possible into a small library with a tiny C99 API and zero dependencies. Here are some of the things it can do:
+Flecs is a [Fast](https://github.com/SanderMertens/ecs_benchmark) and Lightweight ECS ([Entity Component System](#what-is-an-entity-component-system)). Flecs packs as much punch as possible into a small library with a tiny C99 API and zero dependencies. Here are some of the things it can do:
 
-- Process entites on multiple threads with a lock-free, zero-overhead staging architecture [[learn more](Manual.md#staging)]
+- Process entities on multiple threads with a lock-free, zero-overhead staging architecture [[learn more](Manual.md#staging)]
 - Organize components & systems in reusable, library-friendly modules [[learn more](Manual.md#modules)]
 - Run systems every frame, periodically, on demand or on change events [[learn more](Manual.md#reactive-systems)]
-- Report runtime statistics on memory usage, performance and more [[learn more](https://github.com/SanderMertens/flecs/blob/master/include/util/stats.h)]
 
 Additionally, flecs has a flexible engine that lets you do many things, like:
 
-- An expressive prefab system with prefab variants, component overrides and nested prefabs [[learn more](Manual.md#prefabs)]
-- Create specific system expressions with AND, OR, NOT and optional operators [[learn more](Manual.md#system-queries)]
-- Create hierarchies, indexes and DAGs with container entities [[learn more](Manual.md#containers)]
+- A prefab system with variants, overrides and prefab nesting [[learn more](Manual.md#prefabs)]
+- Create system expressions with AND, OR, NOT and optional operators [[learn more](Manual.md#system-signatures)]
+- Create hierarchies, indexes and [DAGs](https://en.wikipedia.org/wiki/Directed_acyclic_graph) with container entities [[learn more](Manual.md#containers)]
 
 Make sure to check the flecs [dashboard](https://github.com/SanderMertens/flecs-systems-admin):
 
 ![dashboard](https://user-images.githubusercontent.com/9919222/54180572-309ec380-4459-11e9-9e48-1a08de57ff91.png)
 
-See [here](#getting-started-with-the-dashboard) for how to create an application with the dashboard.
+## What is an Entity Component System?
+ECS (Entity Component System) is a way to organize code that is mostly used in gaming and simulation projects. ECS code generally performs better than traditional OOP, and is typically easier to reuse. The main differences between ECS and OOP are composition is a first class citizen in ECS, and that data is represented as plain data types rather than encapsulated classes.  A framework is an Entity Component System if it:
+
+- Has _entities_ that are unique identifiers (integers)
+- Has _components_ that are plain data types which can be added to entities
+- Has _systems_ that are functions which are matched against entities with a set of components
+
+For more information, check [the Entity Component System FAQ](https://github.com/SanderMertens/ecs-faq)!
+
+## Example
+The following code shows a simple flecs application:
+
+```c
+typedef struct Position {
+    float x;
+    float y;
+} Position;
+
+typedef int32_t Speed;
+
+void Move(ecs_rows_t *rows) {
+    ECS_COLUMN(rows, Position, p, 1);
+    ECS_COLUMN(rows, Speed, s, 2);
+    
+    for (int i = 0; i < rows->count; i ++) {
+        p[i].x += s[i] * rows->delta_time;
+        p[i].y += s[i] * rows->delta_time;
+    }
+}
+
+int main(int argc, char *argv[]) {
+    ecs_world_t *world = ecs_init_w_args(argc, argv);
+
+    /* Register components and systems */
+    ECS_COMPONENT(world, Position);
+    ECS_COMPONENT(world, Speed);
+    ECS_SYSTEM(world, Move, EcsOnUpdate, Position, Speed);
+    ECS_ENTITY(world, MyEntity, Position, Speed);
+
+    /* Limit application to 60 FPS */
+    ecs_set_target_fps(world, 60);
+
+    /* Progress world in main loop (invokes Move system) */
+    while (ecs_progress(world, 0));
+
+    return ecs_fini(world);
+}
+```
+For more examples, go to [the flecs examples folder](https://github.com/SanderMertens/flecs/tree/master/examples) or the [flecs-hub organization](https://github.com/flecs-hub).
 
 ## Manual
 [Click here](Manual.md) to view the Flecs manual.
@@ -32,7 +79,6 @@ See [here](#getting-started-with-the-dashboard) for how to create an application
 * [Getting started](#getting-started)
 * [Built with flecs](#built-with-flecs)
 * [Modules](#modules)
-* [Example](#example)
 * [Concepts](#concepts)
   * [entity](#entity)
   * [component](#component)
@@ -52,7 +98,7 @@ You can build flecs with either CMake, Meson, [Bake](https://github.com/SanderMe
 Flecs can be easily embedded into projects, as it does not require complex build instructions. The following build instructions are enough to build a functioning Flecs library with gcc:
 
 ```
-gcc src/*.c -I. --shared -o libflecs.so
+gcc src/*.c -Iinclude --shared -o libflecs.so
 ```
 
 ### CMake
@@ -187,46 +233,6 @@ Module      | Description
 [flecs.systems.sdl2](https://github.com/SanderMertens/flecs-systems-sdl2) | An SDL2-based renderer
 [flecs.math](https://github.com/SanderMertens/flecs-math) | Matrix and vector math functions
 [flecs.util](https://github.com/SanderMertens/flecs-util) | Utility functions and datastructures
-
-## Example
-The following code shows a simple flecs application:
-
-```c
-typedef struct Position {
-    float x;
-    float y;
-} Position;
-
-typedef int32_t Speed;
-
-void Move(ecs_rows_t *rows) {
-    Position *p = ecs_column(rows, Position, 1);
-    Speed *s = ecs_column(rows, Speed, 2);
-    
-    for (int i = 0; i < rows->count; i ++) {
-        p[i].x += s[i] * rows->delta_time;
-        p[i].y += s[i] * rows->delta_time;
-    }
-}
-
-int main(int argc, char *argv[]) {
-    ecs_world_t *world = ecs_init();
-
-    /* Register components and systems */
-    ECS_COMPONENT(world, Position);
-    ECS_COMPONENT(world, Speed);
-    ECS_SYSTEM(world, Move, EcsOnUpdate, Position, Speed);
-    ECS_ENTITY(world, MyEntity, Position, Speed);
-
-    /* Limit application to 60 FPS */
-    ecs_set_target_fps(world, 60);
-
-    /* Progress world in main loop (invokes Move system) */
-    while (ecs_progress(world, 0));
-
-    return ecs_fini(world);
-}
-```
 
 ## Concepts
 This section describes the high-level concepts used in flecs, and how they are represented in the API. Rather than providing an exhaustive overview of the API behavior, this section is intended as an introduction to the different API features of flecs.

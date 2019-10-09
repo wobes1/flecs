@@ -1170,7 +1170,7 @@ void SingleThreadStaging_remove_add_2_same_to_current() {
 
 static
 void AddRemoveAdd(ecs_rows_t *rows) {
-    ECS_COLUMN_COMPONENT(rows, Velocity, 2);
+    ECS_COLUMN(rows, Velocity, v, 2);
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -1631,6 +1631,7 @@ void Set_current(ecs_rows_t *rows) {
     IterData *ctx = ecs_get_context(rows->world);
     
     ecs_type_t ecs_type(Rotation) = ctx->component;
+    ecs_entity_t ecs_entity(Rotation) = ecs_type_to_entity(rows->world, ecs_type(Rotation));
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -1694,6 +1695,7 @@ void Set_new_empty(ecs_rows_t *rows) {
     IterData *ctx = ecs_get_context(rows->world);
     
     ecs_type_t ecs_type(Rotation) = ctx->component;
+    ecs_entity_t ecs_entity(Rotation) = ecs_type_to_entity(rows->world, ecs_type(Rotation));
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -1754,7 +1756,9 @@ void Set_new_w_component(ecs_rows_t *rows) {
     IterData *ctx = ecs_get_context(rows->world);
     
     ecs_type_t ecs_type(Position) = ctx->component;
+
     ecs_type_t ecs_type(Rotation) = ctx->component_2;
+    ecs_entity_t ecs_entity(Rotation) = ecs_type_to_entity(rows->world, ecs_type(Rotation));
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -1817,6 +1821,7 @@ void Set_existing_new_w_component(ecs_rows_t *rows) {
     IterData *ctx = ecs_get_context(rows->world);
     
     ecs_type_t ecs_type(Position) = ctx->component;
+    ecs_entity_t ecs_entity(Position) = ecs_type_to_entity(rows->world, ecs_type(Position));
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -1876,6 +1881,7 @@ void Set_new_after_add(ecs_rows_t *rows) {
     IterData *ctx = ecs_get_context(rows->world);
     
     ecs_type_t ecs_type(Position) = ctx->component;
+    ecs_entity_t ecs_entity(Position) = ecs_type_to_entity(rows->world, ecs_type(Position));
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -1938,6 +1944,7 @@ void Remove_after_set(ecs_rows_t *rows) {
     IterData *ctx = ecs_get_context(rows->world);
     
     ecs_type_t ecs_type(Position) = ctx->component;
+    ecs_entity_t ecs_entity(Position) = ecs_type_to_entity(rows->world, ecs_type(Position));
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -2002,6 +2009,7 @@ void Delete_after_set(ecs_rows_t *rows) {
     IterData *ctx = ecs_get_context(rows->world);
     
     ecs_type_t ecs_type(Position) = ctx->component;
+    ecs_entity_t ecs_entity(Position) = ecs_type_to_entity(rows->world, ecs_type(Position));
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -2576,6 +2584,7 @@ static
 void Set_velocity(ecs_rows_t *rows) {
     IterData *ctx = ecs_get_context(rows->world);
     ecs_type_t ecs_type(Velocity) = ctx->component;
+    ecs_entity_t ecs_entity(Velocity) = ecs_type_to_entity(rows->world, ecs_type(Velocity));
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -2625,6 +2634,7 @@ static
 void Set_velocity_on_new(ecs_rows_t *rows) {
     IterData *ctx = ecs_get_context(rows->world);
     ecs_type_t ecs_type(Velocity) = ctx->component;
+    ecs_entity_t ecs_entity(Velocity) = ecs_type_to_entity(rows->world, ecs_type(Velocity));
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -2836,7 +2846,7 @@ void SingleThreadStaging_merge_table_w_container_added_on_set_reverse() {
 
 static
 void Task(ecs_rows_t *rows) {
-    ECS_COLUMN_COMPONENT(rows, Position, 1);
+    ECS_COLUMN(rows, Position, p, 1);
     ecs_entity_t *e = ecs_get_context(rows->world);
 
     ecs_add(rows->world, *e, Position);
@@ -2863,7 +2873,6 @@ void SingleThreadStaging_merge_after_tasks() {
 static
 void OverrideAfterRemove(ecs_rows_t *rows) {
     ECS_COLUMN(rows, Position, p, 1);
-    ECS_COLUMN_COMPONENT(rows, Position, 1);
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -2899,11 +2908,13 @@ void SingleThreadStaging_override_after_remove_in_progress() {
     ECS_COMPONENT(world, Velocity);
 
     ECS_ENTITY(world, base, Position, EcsDisabled);
+
     ECS_ENTITY(world, e, Position, INSTANCEOF | base);
 
     ECS_SYSTEM(world, OverrideAfterRemove, EcsOnUpdate, Position);
 
     ecs_set(world, base, Position, {10, 20});
+
     ecs_set(world, e, Position, {30, 40});
 
     ecs_progress(world, 1);

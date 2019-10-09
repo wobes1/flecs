@@ -133,6 +133,7 @@ struct ecs_table_t {
 
     ecs_edge_t *edges;            /* Edges to other tables */
     ecs_edge_t parent_edge;       /* Edge to tables with CHILDOF columns */
+    ecs_map_t *hi_edges;          /* Edges to high entity ids (>= MAX_COMPONENT) */
 
     uint32_t flags;               /* Flags for testing table properties */
 };
@@ -242,6 +243,7 @@ struct ecs_query_t {
 /** Base type for a system */
 typedef struct EcsSystem {
     ecs_system_action_t action;    /* Callback to be invoked for matching rows */
+    void *ctx;                     /* Userdata for system */
     EcsSystemKind kind;            /* Kind of system */
     float time_spent;              /* Time spent on running system */
     bool enabled;                  /* Is system enabled or not */
@@ -476,6 +478,8 @@ struct ecs_world {
     ecs_table_t *t_prefab;
     ecs_table_t *t_row_system;
     ecs_table_t *t_col_system;
+
+    ecs_type_t t_builtins;
 
 
     /* -- Time management -- */

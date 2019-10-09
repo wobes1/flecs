@@ -165,7 +165,7 @@ void World_entity_range_out_of_range_check_disabled() {
 }
 
 void AddToExisting(ecs_rows_t *rows) {
-    ECS_COLUMN_COMPONENT(rows, Velocity, 2);
+    ECS_COLUMN(rows, Velocity, v, 2);
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -212,7 +212,7 @@ void World_entity_range_add_in_range_in_progress() {
 }
 
 void AddOutOfRange(ecs_rows_t *rows) {
-    ECS_COLUMN_COMPONENT(rows, Velocity, 2);
+    ECS_COLUMN(rows, Velocity, v, 2);
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -484,7 +484,7 @@ void World_phases() {
     Position *p = ecs_get_ptr(world, e, Position);
     test_int(p->x, 8);
 
-    ecs_run(world, TManual, 0, NULL);
+    ecs_run(world, TManual, 0, 0, 0, NULL);
 
     test_int(p->x, 9);
 
@@ -516,7 +516,7 @@ void World_phases_match_in_create() {
     Position *p = ecs_get_ptr(world, e, Position);
     test_int(p->x, 8);
 
-    ecs_run(world, TManual, 0, NULL);
+    ecs_run(world, TManual, 0, 0, 0, NULL);
 
     test_int(p->x, 9);
 
@@ -526,7 +526,6 @@ void World_phases_match_in_create() {
 static
 void TMergeOnLoad(ecs_rows_t *rows) {
     ECS_COLUMN(rows, Position, p, 1);
-    ECS_COLUMN_COMPONENT(rows, Position, 1);
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -538,7 +537,6 @@ void TMergeOnLoad(ecs_rows_t *rows) {
 static
 void TMergePostLoad(ecs_rows_t *rows) {
     ECS_COLUMN(rows, Position, p, 1);
-    ECS_COLUMN_COMPONENT(rows, Position, 1);
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -550,7 +548,6 @@ void TMergePostLoad(ecs_rows_t *rows) {
 static
 void TMergePreUpdate(ecs_rows_t *rows) {
     ECS_COLUMN(rows, Position, p, 1);
-    ECS_COLUMN_COMPONENT(rows, Position, 1);
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -562,7 +559,6 @@ void TMergePreUpdate(ecs_rows_t *rows) {
 static
 void TMergeOnUpdate(ecs_rows_t *rows) {
     ECS_COLUMN(rows, Position, p, 1);
-    ECS_COLUMN_COMPONENT(rows, Position, 1);
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -574,7 +570,6 @@ void TMergeOnUpdate(ecs_rows_t *rows) {
 static
 void TMergeOnValidate(ecs_rows_t *rows) {
     ECS_COLUMN(rows, Position, p, 1);
-    ECS_COLUMN_COMPONENT(rows, Position, 1);
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -586,7 +581,6 @@ void TMergeOnValidate(ecs_rows_t *rows) {
 static
 void TMergePostUpdate(ecs_rows_t *rows) {
     ECS_COLUMN(rows, Position, p, 1);
-    ECS_COLUMN_COMPONENT(rows, Position, 1);
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -598,7 +592,6 @@ void TMergePostUpdate(ecs_rows_t *rows) {
 static
 void TMergePreStore(ecs_rows_t *rows) {
     ECS_COLUMN(rows, Position, p, 1);
-    ECS_COLUMN_COMPONENT(rows, Position, 1);
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -610,7 +603,6 @@ void TMergePreStore(ecs_rows_t *rows) {
 static
 void TMergeOnStore(ecs_rows_t *rows) {
     ECS_COLUMN(rows, Position, p, 1);
-    ECS_COLUMN_COMPONENT(rows, Position, 1);
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -622,7 +614,6 @@ void TMergeOnStore(ecs_rows_t *rows) {
 static
 void TMergeManual(ecs_rows_t *rows) {
     ECS_COLUMN(rows, Position, p, 1);
-    ECS_COLUMN_COMPONENT(rows, Position, 1);
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -656,7 +647,7 @@ void World_phases_w_merging() {
     Position *p = ecs_get_ptr(world, e, Position);
     test_int(p->x, 8);
 
-    ecs_run(world, TMergeManual, 0, NULL);
+    ecs_run(world, TMergeManual, 0, 0, 0, NULL);
 
     test_int(p->x, 9);
 

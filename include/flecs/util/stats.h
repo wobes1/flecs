@@ -83,6 +83,7 @@ typedef struct ecs_world_stats_t {
     bool system_profiling;
 } ecs_world_stats_t;
 
+/* TODO 
 FLECS_EXPORT
 void ecs_get_stats(
     ecs_world_t *world,
@@ -91,6 +92,10 @@ void ecs_get_stats(
 FLECS_EXPORT
 void ecs_free_stats(
     ecs_world_stats_t *stats);
+*/
+
+#define ecs_get_stats(world, stats)
+#define ecs_free_stats(stats)
 
 FLECS_EXPORT
 void ecs_measure_frame_time(

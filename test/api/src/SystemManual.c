@@ -46,7 +46,7 @@ void SystemManual_1_type_1_component() {
     SysTestData ctx = {0};
     ecs_set_context(world, &ctx);
 
-    ecs_run(world, Iter, 1, NULL);
+    ecs_run(world, Iter, 1, 0, 0, NULL);
 
     test_int(ctx.count, 3);
     test_int(ctx.invoked, 1);
@@ -94,19 +94,19 @@ void SystemManual_disabled() {
 
     ECS_SYSTEM(world, NormalSystem, EcsManual, Position);
 
-    ecs_run(world, NormalSystem, 0, NULL);
+    ecs_run(world, NormalSystem, 0, 0, 0, NULL);
 
     test_int(normal_count, 1);
 
     ecs_enable(world, NormalSystem, false);
 
-    ecs_run(world, NormalSystem, 0, NULL);
+    ecs_run(world, NormalSystem, 0, 0, 0, NULL);
 
     test_int(normal_count, 1);
 
     ecs_enable(world, NormalSystem, true);
 
-    ecs_run(world, NormalSystem, 0, NULL);
+    ecs_run(world, NormalSystem, 0, 0, 0, NULL);
 
     test_int(normal_count, 2);
 

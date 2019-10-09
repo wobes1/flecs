@@ -512,3 +512,60 @@ ecs_entity_t ecs_column_entity(
     ecs_assert(rows->components != NULL, ECS_INTERNAL_ERROR, NULL);
     return rows->components[index - 1];
 }
+
+ecs_type_t ecs_table_type(
+    ecs_rows_t *rows)
+{
+    ecs_table_t *table = rows->table;
+    return table->type;
+}
+
+void* ecs_table_column(
+    ecs_rows_t *rows,
+    uint32_t column)
+{
+    ecs_table_t *table = rows->table;
+    return ecs_vector_first(table->columns[column + 1].data);
+}
+
+static
+EcsSystem* get_system_ptr(
+    ecs_world_t *world,
+    ecs_entity_t system)
+{
+    EcsSystem *result = NULL;
+    EcsColSystem *cs = ecs_get_ptr(world, system, EcsColSystem);
+    if (cs) {
+        result = (EcsSystem*)cs;
+    } else {
+        EcsRowSystem *rs = ecs_get_ptr(world, system, EcsRowSystem);
+        if (rs) {
+            result = (EcsSystem*)rs;
+        }
+    }
+
+    return result;
+}
+
+void ecs_set_system_context(
+    ecs_world_t *world,
+    ecs_entity_t system,
+    const void *ctx)
+{
+    EcsSystem *system_data = get_system_ptr(world, system);
+
+    ecs_assert(system_data != NULL, ECS_INVALID_PARAMETER, NULL);
+
+    system_data->ctx = (void*)ctx;
+}
+
+void* ecs_get_system_context(
+    ecs_world_t *world,
+    ecs_entity_t system)
+{
+    EcsSystem *system_data = get_system_ptr(world, system);
+
+    ecs_assert(system_data != NULL, ECS_INVALID_PARAMETER, NULL);
+
+    return system_data->ctx;
+}

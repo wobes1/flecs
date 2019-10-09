@@ -625,7 +625,7 @@ void System_w_FromContainer_2_column_1_from_container_w_or() {
 static
 void Dummy(ecs_rows_t *rows) {
     ECS_COLUMN(rows, Mass, m_ptr, 1);
-    ECS_COLUMN(rows, Position, p, 2);
+    ECS_COLUMN_DATA(rows, Position, p, 2);
 
     test_assert(!m_ptr || ecs_is_shared(rows, 1));
 
@@ -807,7 +807,7 @@ void System_w_FromContainer_add_component_after_match_and_rematch_w_entity_type_
 
 static
 void SetMass(ecs_rows_t *rows) {
-    ECS_COLUMN_COMPONENT(rows, Mass, 2);
+    ECS_COLUMN(rows, Mass, m, 2);
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -1016,7 +1016,7 @@ void System_w_FromContainer_add_component_after_match_2_systems() {
 
 static
 void AddMass(ecs_rows_t *rows) {
-    ECS_COLUMN_COMPONENT(rows, Mass, 2);
+    ECS_COLUMN(rows, Mass, m, 2);
 
     int i;
     for (i = 0; i < rows->count; i ++) {
@@ -1174,7 +1174,7 @@ void System_w_FromContainer_new_child_after_match() {
 
 void IterSame(ecs_rows_t *rows) {
     ECS_COLUMN(rows, Position, p_parent, 1);
-    ECS_COLUMN(rows, Position, p, 2);
+    ECS_COLUMN_DATA(rows, Position, p, 2);
 
     test_assert(ecs_is_shared(rows, 1));
 

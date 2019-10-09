@@ -1144,7 +1144,7 @@ void TestOptional_w_field(ecs_rows_t *rows) {
     }
 }
 
-void SystemOnFrame_ensure_optional_is_null_column() {
+void SystemOnFrame_ensure_optional_is_unset_column() {
     ecs_world_t *world = ecs_init();
 
     ECS_COMPONENT(world, Position);
@@ -1830,6 +1830,166 @@ void SystemOnFrame_cascade_dont_match_inheritance() {
     test_int(ctx.s[1][1], base);    
     test_int(ctx.e[0], e1);
     test_int(ctx.e[1], e2);
+
+    ecs_fini(world);
+}
+
+void SystemOnFrame_not_from_singleton() {
+    ecs_world_t *world = ecs_init();
+
+    ECS_COMPONENT(world, Position);
+    ECS_COMPONENT(world, Velocity);
+
+    ECS_ENTITY(world, e, Position);
+
+    ECS_SYSTEM(world, Iter, EcsOnUpdate, Position, !$.Velocity);
+
+    SysTestData ctx = {0};
+    ecs_set_context(world, &ctx);
+
+    ecs_progress(world, 1);
+
+    test_int(ctx.count, 1);
+
+    ecs_add(world, ECS_SINGLETON, Velocity);
+
+    ecs_progress(world, 1);
+    
+    test_int(ctx.count, 1);
+
+    ecs_fini(world);
+}
+
+void SystemOnFrame_not_from_entity() {
+    ecs_world_t *world = ecs_init();
+
+    ECS_COMPONENT(world, Position);
+    ECS_COMPONENT(world, Velocity);
+
+    ECS_ENTITY(world, e, Position);
+    ECS_ENTITY(world, e2, 0);
+
+    ECS_SYSTEM(world, Iter, EcsOnUpdate, Position, !e2.Velocity);
+
+    SysTestData ctx = {0};
+    ecs_set_context(world, &ctx);
+
+    ecs_progress(world, 1);
+
+    test_int(ctx.count, 1);
+
+    ecs_add(world, e2, Velocity);
+
+    ecs_progress(world, 1);
+    
+    test_int(ctx.count, 1);
+
+    ecs_fini(world);
+}
+
+static
+void TestContext(ecs_rows_t *rows) {
+    void *world_ctx = ecs_get_context(rows->world);
+    test_assert(world_ctx == rows->param);
+    uint32_t *param = rows->param;
+    (*param) ++;
+}
+
+void SystemOnFrame_sys_context() {
+    ecs_world_t *world = ecs_init();
+    uint32_t param = 0;
+
+    ECS_COMPONENT(world, Position);
+
+    ECS_SYSTEM(world, TestContext, EcsOnUpdate, Position);
+
+    ecs_set_system_context(world, TestContext, &param);
+
+    test_assert(ecs_get_system_context(world, TestContext) == &param);
+
+    ecs_fini(world);
+}
+
+void SystemOnFrame_get_sys_context_from_param() {
+    ecs_world_t *world = ecs_init();
+    uint32_t param = 0;
+
+    ECS_COMPONENT(world, Position);
+    ECS_ENTITY(world, e, Position);
+
+    ECS_SYSTEM(world, TestContext, EcsOnUpdate, Position);
+
+    /* Set world context so system can compare if pointer is correct */
+    ecs_set_context(world, &param);
+    ecs_set_system_context(world, TestContext, &param);
+
+    ecs_progress(world, 1);
+
+    test_int(param, 1);
+
+    ecs_fini(world);
+}
+
+static bool Test_feld_w_zero_size_invoked = false;
+
+static
+void Test_feld_w_zero_size(ecs_rows_t *rows) {
+    test_assert(_ecs_field(rows, 0, 1, 0) != _ecs_field(rows, 0, 1, 1));
+    Test_feld_w_zero_size_invoked = true;
+}
+
+void SystemOnFrame_use_field_w_0_size() {
+    ecs_world_t *world = ecs_init();
+
+    ECS_COMPONENT(world, Position);
+    ECS_ENTITY(world, e1, Position);
+    ECS_ENTITY(world, e2, Position);
+
+    ECS_SYSTEM(world, Test_feld_w_zero_size, EcsOnUpdate, Position);
+
+    ecs_progress(world, 1);
+
+    test_assert(Test_feld_w_zero_size_invoked == true);
+
+    ecs_fini(world);
+}
+
+static ecs_entity_t dummy_invoked = 0;
+
+static void Dummy(ecs_rows_t *rows) {
+    test_assert(dummy_invoked == 0);
+    dummy_invoked = rows->entities[0];
+}
+
+void SystemOnFrame_owned_only() {
+    ecs_world_t *world = ecs_init();
+
+    ECS_COMPONENT(world, Position);
+
+    ECS_SYSTEM(world, Dummy, EcsOnUpdate, OWNED.Position);
+
+    ecs_entity_t e = ecs_new(world, Position);
+
+    ecs_progress(world, 0);
+
+    test_assert(dummy_invoked == e);
+
+    ecs_fini(world);
+}
+
+void SystemOnFrame_shared_only() {
+    ecs_world_t *world = ecs_init();
+
+    ECS_COMPONENT(world, Position);
+
+    ECS_SYSTEM(world, Dummy, EcsOnUpdate, SHARED.Position);
+
+    ecs_entity_t base = ecs_new(world, Position);
+    ecs_entity_t e = ecs_new_instance(world, base, 0);
+
+    ecs_progress(world, 0);
+
+    test_assert(dummy_invoked == e);
 
     ecs_fini(world);
 }

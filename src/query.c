@@ -34,10 +34,11 @@ ecs_entity_t components_contains(
             ecs_assert(row != 0, ECS_INTERNAL_ERROR, NULL);
 
             if (row->table) {
-                ecs_entity_t component = ecs_type_contains(
-                    world, row->table->type, type, match_all, true);
+                ecs_entity_t component;
+                bool result = ecs_type_contains(
+                    world, row->table->type, type, match_all, true, &component);
 
-                if (component != 0) {
+                if (result) {
                     if (entity_out) *entity_out = entity;
                     return component;
                 }
@@ -125,9 +126,9 @@ void add_table(
             } else if (op == EcsOperOptional) {
                 component = column->is.component;
             } else if (op == EcsOperOr) {
-                component = ecs_type_contains(
+                ecs_type_contains(
                     world, table_type, column->is.type, 
-                    false, true);
+                    false, true, &component);
             }
 
             if (from == EcsFromEntity) {
@@ -285,7 +286,7 @@ bool match_table(
     ecs_table_t *table,
     ecs_query_t *query)
 {
-    ecs_type_t type, table_type = table->type;
+    ecs_type_t table_type = table->type;
 
     if (!query->sig.match_disabled && ecs_type_has_entity_intern(
         world, table_type, EEcsDisabled, false))
@@ -302,9 +303,10 @@ bool match_table(
     }
 
     /* Test if table has SELF columns in either owned or inherited components */
-    type = query->and_from_self;
+    ecs_type_t type = query->and_from_self;
+
     if (type && !ecs_type_contains(
-        world, table_type, type, true, true))
+        world, table_type, type, true, true, NULL))
     {
         return false;
     }
@@ -312,7 +314,7 @@ bool match_table(
     /* Test if table has OWNED columns in owned components */
     type = query->and_from_owned;
     if (type && !ecs_type_contains(
-        world, table_type, type, true, false))
+        world, table_type, type, true, false, NULL))
     {
         return false;
     }  
@@ -320,13 +322,13 @@ bool match_table(
     /* Test if table has SHARED columns in shared components */
     type = query->and_from_shared;
     if (type && ecs_type_contains(
-        world, table_type, type, true, false))
+        world, table_type, type, true, false, NULL))
     {
         /* If table has owned components that override the SHARED component, the
          * table won't match. */
         return false;
     } else if (type && !ecs_type_contains(
-        world, table_type, type, true, true))
+        world, table_type, type, true, true, NULL))
     {
         /* If the table does not have owned components, ensure that a SHARED
          * component can be found in prefabs. If not, the table doesn't match. */
@@ -362,7 +364,7 @@ bool match_table(
             type = elem->is.type;
             if (from == EcsFromSelf) {
                 if (!ecs_type_contains(
-                    world, table_type, type, false, true))
+                    world, table_type, type, false, true, NULL))
                 {
                     return false;
                 }
@@ -384,24 +386,24 @@ bool match_table(
     }
 
     type = query->not_from_self;
-    if (type && ecs_type_contains(world, table_type, type, false, true))
+    if (type && ecs_type_contains(world, table_type, type, false, true, NULL))
     {
         return false;
     }
 
     type = query->not_from_owned;
-    if (type && ecs_type_contains(world, table_type, type, false, false))
+    if (type && ecs_type_contains(world, table_type, type, false, false, NULL))
     {
         return false;
     }
 
     type = query->not_from_shared;
-    if (type && !ecs_type_contains(world, table_type, type, false, false))
+    if (type && !ecs_type_contains(world, table_type, type, false, false, NULL))
     {
-        if (ecs_type_contains(world, table_type, type, false, true)) {
+        if (ecs_type_contains(world, table_type, type, false, true, NULL)) {
             return false;
         }
-    }        
+    }
 
     type = query->not_from_container;
     if (type && components_contains(

@@ -43,6 +43,44 @@
                 "type_w_tag_mixed"
             ]
         }, {
+            "id": "Set_w_data",
+            "testcases": [
+                "1_column_3_rows",
+                "2_columns_3_rows",
+                "1_column_3_rows_w_entities",
+                "2_columns_3_rows_w_entities",
+                "1_column_3_rows_overwrite_entities",
+                "2_columns_3_rows_overwrite_entities",
+                "overwrite_different_order",
+                "overwrite_different_type",
+                "2_columns_3_rows_no_data",
+                "2_columns_3_rows_1_tag",
+                "2_columns_3_rows_1_parent",
+                "2_columns_3_rows_1_base",
+                "2_columns_3_rows_1_base_w_entities",
+                "2_columns_3_rows_1_nested_prefab",
+                "2_columns_3_rows_component_order",
+                "overwrite_w_unset_column",
+                "overwrite_from_other_type_w_unset_column",
+                "staged_1_column_3_rows",
+                "staged_1_column_3_rows_w_entities",
+                "staged_1_column_3_rows_w_entities_w_base",
+                "staged_set_existing_in_stage",
+                "on_add",
+                "on_add_w_entities",
+                "on_add_w_entities_again",
+                "on_set",
+                "on_set_w_entities",
+                "on_set_no_data_after_on_add",
+                "on_remove_existing",
+                "on_add_different_origin",
+                "on_add_different_overlapping_origin",
+                "on_add_different_overlapping_origin_reorder",
+                "on_set_different_origin",
+                "on_remove_different_origin",
+                "existing_different_type_out_of_order"
+            ]
+        }, {
             "id": "Add",
             "testcases": [
                 "zero",
@@ -93,6 +131,22 @@
                 "1_from_empty",
                 "type_from_empty",
                 "not_added"
+            ]
+        }, {
+            "id": "Add_remove_w_filter",
+            "testcases": [
+                "remove_1_no_filter",
+                "remove_2_no_filter",
+                "remove_1_to_empty_no_filter",
+                "remove_2_to_empty_no_filter",
+                "remove_1_all_no_filter",
+                "remove_2_all_no_filter",
+                "remove_1_exclude_1",
+                "remove_1_exclude_2",
+                "remove_1_include_1",
+                "remove_1_include_2",
+                "add_1",
+                "add_2"                           
             ]
         }, {
             "id": "Has",
@@ -157,7 +211,22 @@
                 "delete_1st_of_3",
                 "delete_2nd_of_3",
                 "delete_2_of_3",
-                "delete_3_of_3"
+                "delete_3_of_3",
+                "delete_w_on_remove"
+            ]
+        }, {
+            "id": "Delete_w_filter",
+            "testcases": [
+                "delete_1",
+                "delete_2",
+                "delete_1_2_types",
+                "delete_2_2_types",
+                "delete_except_1",
+                "delete_except_2",
+                "delete_with_any_of_2",
+                "delete_except_all_of_2",
+                "include_exact",
+                "exclude_exact"
             ]
         }, {
             "id": "Set",
@@ -252,7 +321,8 @@
                 "redefine_row_system",
                 "system_w_or_prefab",
                 "system_w_or_disabled",
-                "system_w_or_disabled_and_prefab"
+                "system_w_or_disabled_and_prefab",
+                "table_columns_access"
             ]
         }, {
             "id": "SystemOnAdd",
@@ -286,7 +356,9 @@
                 "add_in_progress_before_system_def",
                 "disabled_system",
                 "2_systems_w_table_creation",
-                "2_systems_w_table_creation_in_progress"
+                "2_systems_w_table_creation_in_progress",
+                "sys_context",
+                "get_sys_context_from_param"
             ]
         }, {
             "id": "SystemOnRemove",
@@ -345,7 +417,7 @@
                 "2_type_1_and_1_optional",
                 "2_type_2_and_1_optional",
                 "6_type_1_and_2_optional",
-                "ensure_optional_is_null_column",
+                "ensure_optional_is_unset_column",
                 "ensure_optional_is_null_shared",
                 "ensure_optional_is_null_field_owned",
                 "ensure_optional_is_null_field_shared",
@@ -369,7 +441,14 @@
                 "shared_column",
                 "shared_not_column",
                 "container_dont_match_inheritance",
-                "cascade_dont_match_inheritance"
+                "cascade_dont_match_inheritance",
+                "not_from_singleton",
+                "not_from_entity",
+                "sys_context",
+                "get_sys_context_from_param",
+                "use_field_w_0_size",
+                "owned_only",
+                "shared_only"
             ]
         }, {
             "id": "SystemCascade",
@@ -393,7 +472,8 @@
                 "from_system",
                 "on_remove_no_components",
                 "on_remove_one_tag",
-                "on_remove_from_system"
+                "on_remove_from_system",
+                "tasks_in_phases"
             ]
         }, {
             "id": "Container",
@@ -473,6 +553,8 @@
                 "no_overwrite_on_2nd_add_in_progress",
                 "no_instantiate_on_2nd_add",
                 "no_instantiate_on_2nd_add_in_progress",
+                "nested_prefab_in_progress_w_count",
+                "nested_prefab_in_progress_w_count_set_after_override",
                 "get_ptr_from_prefab_from_new_table_in_progress",
                 "match_base",
                 "match_base_after_add_in_prev_phase",
@@ -485,7 +567,10 @@
                 "cyclic_inheritance_w_clone_in_progress",
                 "cyclic_inheritance_get_unavailable",
                 "cyclic_inheritance_has_unavailable",
-                "clone_after_inherit_in_on_add"
+                "clone_after_inherit_in_on_add",
+                "override_from_nested",
+                "create_multiple_nested_w_on_add",
+                "create_multiple_nested_w_on_add_in_progress"
             ]
         }, {
             "id": "System_w_FromContainer",
@@ -675,7 +760,10 @@
                 "4_thread_test_combs_100_entity_2_types",
                 "5_thread_test_combs_100_entity_2_types",
                 "6_thread_test_combs_100_entity_2_types",
-                "change_thread_count"
+                "change_thread_count",
+                "multithread_quit",
+                "schedule_w_tasks",
+                "reactive_system"
             ]
         }, {
             "id": "SingleThreadStaging",
@@ -755,7 +843,9 @@
                 "6_threads_add_to_current",
                 "stress_create_delete_entity_random_components",
                 "stress_set_entity_random_components",
-                "2_threads_on_add"
+                "2_threads_on_add",
+                "new_w_count"
+                
             ]
         }, {
             "id": "Modules",

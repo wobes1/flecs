@@ -74,7 +74,7 @@ void System_w_FromId_3_column_2_from_id() {
 
 static
 void CheckColumnType(ecs_rows_t *rows) {
-    ECS_COLUMN_COMPONENT(rows, Position, 2);
+    ECS_COLUMN(rows, Position, p, 2);
 
     test_assert(ecs_type(Position) == ecs_column_type(rows, 1));
 

@@ -253,7 +253,7 @@ void add_prefab_child_to_builder(
 }
 
 void EcsInitPrefab(ecs_rows_t *rows) {
-    ECS_COLUMN(rows, EcsPrefab, prefab, 1);
+    ECS_COLUMN_DATA(rows, EcsPrefab, prefab, 1);
 
     uint32_t i;
     for (i = 0; i < rows->count; i ++) {
@@ -264,7 +264,7 @@ void EcsInitPrefab(ecs_rows_t *rows) {
 void EcsSetPrefab(ecs_rows_t *rows) {
     ecs_world_t *world = rows->world;
 
-    ECS_COLUMN(rows, EcsPrefab, prefab, 1);
+    ECS_COLUMN_DATA(rows, EcsPrefab, prefab, 1);
 
     uint32_t i;
     for (i = 0; i < rows->count; i ++) {
@@ -468,6 +468,10 @@ ecs_world_t *ecs_init(void) {
     
     sig = ecs_new_signature(world, "EcsPrefab");
     ecs_new_system(world, "EcsSetPrefab", EcsOnSet, &sig, EcsSetPrefab);
+
+    world->t_builtins = ecs_expr_to_type(world,
+        "EcsComponent, EcsTypeComponent, EcsPrefab, EcsPrefabParent"
+        ", EcsPrefabBuilder, EcsRowSystem, EcsColSystem");
 
     return world;
 }
@@ -1029,8 +1033,7 @@ int ecs_enable_admin(
     ecs_measure_system_time(world, true);
 
     /* Create admin instance */
-    ecs_entity_t admin = ecs_lookup(world, "EcsAdmin");
-    ecs_type_t TEcsAdmin = ecs_type_from_entity(world, admin);
+    ecs_entity_t EEcsAdmin = ecs_lookup(world, "EcsAdmin");
     ecs_set(world, 0, EcsAdmin, {port});
 
     ecs_os_log("Admin is running on port %d", port);

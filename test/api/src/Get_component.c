@@ -72,7 +72,7 @@ void Get_component_get_2_from_3() {
 
 static
 void Test_main_stage(ecs_rows_t *rows) {
-    ECS_COLUMN_COMPONENT(rows, Position, 1);
+    ECS_COLUMN(rows, Position, p, 1);
 
     for (int i = 0; i < rows->count; i ++) {
         ecs_entity_t e = rows->entities[i];
@@ -97,7 +97,7 @@ void Get_component_get_1_from_2_in_progress_from_main_stage() {
 
 static
 void Add_in_progress(ecs_rows_t *rows) {
-    ECS_COLUMN_COMPONENT(rows, Position, 1);
+    ECS_COLUMN(rows, Position, p, 1);
 
     ecs_entity_t ecs_entity(Velocity) = 0;
     ecs_type_t ecs_type(Velocity) = NULL;
@@ -133,8 +133,8 @@ void Get_component_get_1_from_2_add_in_progress() {
 
 static
 void Add_in_progress_test_main(ecs_rows_t *rows) {
-    ECS_COLUMN_COMPONENT(rows, Position, 1);
-    ECS_COLUMN_COMPONENT(rows, Velocity, 2);
+    ECS_COLUMN(rows, Position, p, 1);
+    ECS_COLUMN(rows, Velocity, v, 2);
 
     for (int i = 0; i < rows->count; i ++) {
         ecs_entity_t e = rows->entities[i];
@@ -166,8 +166,8 @@ void Get_component_get_both_from_2_add_in_progress() {
 
 static
 void Add_remove_in_progress_test_main(ecs_rows_t *rows) {
-    ECS_COLUMN_COMPONENT(rows, Position, 1);
-    ECS_COLUMN_COMPONENT(rows, Velocity, 2);
+    ECS_COLUMN(rows, Position, p, 1);
+    ECS_COLUMN(rows, Velocity, v, 2);
 
     for (int i = 0; i < rows->count; i ++) {
         ecs_entity_t e = rows->entities[i];
