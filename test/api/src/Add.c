@@ -36,10 +36,12 @@ void Add_component_again() {
 
     ecs_add(world, e, Position);
     test_assert(ecs_has(world, e, Position));
+    test_int(ecs_count(world, Position), 1);
 
     ecs_add(world, e, Position);
     test_assert(ecs_has(world, e, Position));
-    
+    test_int(ecs_count(world, Position), 1);
+
     ecs_fini(world);
 }
 

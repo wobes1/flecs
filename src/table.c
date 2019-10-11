@@ -30,6 +30,7 @@ ecs_type_t entities_to_type(
 
 static
 void init_edges(
+    ecs_world_t *world,
     ecs_table_t *table)
 {
     ecs_entity_t *entities = ecs_vector_first(table->type);
@@ -44,15 +45,21 @@ void init_edges(
         ecs_entity_t e = entities[i];
 
         if (e >= ECS_MAX_COMPONENTS) {
-            ecs_edge_t edge = {
-                .add = table,
-                .remove = NULL
-            };
+            ecs_edge_t edge = { .add = table };
+
+            if (count == 1) {
+                edge.remove = &world->table_root;
+            }
 
             ecs_map_set(table->hi_edges, e, &edge);
         } else {
             table->edges[e].add = table;
-            table->edges[e].remove = NULL;
+
+            if (count == 1) {
+                table->edges[e].remove = &world->table_root;
+            } else {
+                table->edges[e].remove = NULL;
+            }
         }
     }
 
@@ -69,7 +76,7 @@ void init_table(
     table->type = entities_to_type(entities);
     table->columns = NULL;
     
-    init_edges(table);
+    init_edges(world, table);
 
     table->queries = NULL;
     table->on_new = NULL;
@@ -375,8 +382,9 @@ ecs_table_t *ecs_table_find_or_create(
     ecs_stage_t *stage,
     ecs_entity_array_t *entities)
 {
-    uint32_t count = entities->count;
-    if (count) {
+    uint32_t count;
+    if (entities && (count = entities->count)) 
+    {
         ecs_table_t *table = &world->table_root;
         ecs_entity_t *array = entities->array;
         uint32_t i;
@@ -454,8 +462,6 @@ ecs_table_t *ecs_table_traverse(
         node = traverse_add(world, stage, node, to_add, added);
     }
 
-    ecs_assert(node != NULL, ECS_INTERNAL_ERROR, NULL);
-
     if (node == &world->table_root) {
         node = NULL;
     }
@@ -477,7 +483,10 @@ void ecs_table_merge(
 
     ecs_column_t *new_columns = new_table ? new_table->columns : NULL;
     ecs_column_t *old_columns = old_table->columns;
-    ecs_assert(old_columns != NULL, ECS_INTERNAL_ERROR, NULL);
+
+    if (!old_columns) {
+        return;
+    }
 
     uint32_t old_count = old_columns->data ? ecs_vector_count(old_columns->data) : 0;
     uint32_t new_count = 0;

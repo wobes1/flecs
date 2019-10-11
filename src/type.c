@@ -182,9 +182,11 @@ ecs_type_t ecs_type_merge_intern(
         world, stage, table, &add_array, &remove_array, to_add_except, 
         to_remove_intersect);
 
-    ecs_assert(table != NULL, ECS_INTERNAL_ERROR, NULL);
-
-    return table->type;
+    if (!table) {
+        return NULL;
+    } else {
+        return table->type;
+    }
 }
 
 /* O(n) algorithm to check whether type 1 is equal or superset of type 2 */

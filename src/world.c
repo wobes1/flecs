@@ -88,15 +88,15 @@ void bootstrap_component(
     int32_t row = ecs_columns_insert(world, table, table->columns, entity);
 
     /* Create record for component entity */
-    ecs_record_t record = {.table = table, .row = row};
+    ecs_record_t record = {.table = table, .row = row + 1};
     ecs_set_entity(world, NULL, entity, &record);
 
     /* Set size and id */
     EcsComponent *component_data = ecs_vector_first(table->columns[1].data);
     EcsId *id_data = ecs_vector_first(table->columns[2].data);
     
-    component_data[row - 1].size = size;
-    id_data[row - 1] = id;
+    component_data[row].size = size;
+    id_data[row] = id;
 }
 
 /** Get type for component */

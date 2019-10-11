@@ -106,7 +106,7 @@ uint32_t ecs_columns_insert(
     }
 
     /* Return index of last added entity */
-    return index + 1;
+    return index;
 }
 
 void ecs_columns_delete(
@@ -114,21 +114,12 @@ void ecs_columns_delete(
     ecs_stage_t *stage,
     ecs_table_t *table,
     ecs_column_t *columns,
-    int32_t sindex)
+    int32_t index)
 {
     ecs_vector_t *entity_column = columns[0].data;
-    uint32_t index, count = ecs_vector_count(entity_column);
-
-    if (sindex < 0) {
-        index = -sindex;
-    } else {
-        index = sindex;
-    }
-
-    index --;
+    uint32_t count = ecs_vector_count(entity_column);
 
     ecs_assert(count != 0, ECS_INTERNAL_ERROR, NULL);
-
     count --;
     
     ecs_assert(index <= count, ECS_INTERNAL_ERROR, NULL);
