@@ -109,6 +109,8 @@ const char* ecs_strerror(
         return "a prefab child type must have at least one INSTANCEOF element";
     case ECS_UNINITIALIZED_READ:
         return "uninitialized read detected";
+    case ECS_TOO_MANY_COMPONENTS_FOR_SYSTEM:
+        return "too many components for system";
     }
 
     return "unknown error code";

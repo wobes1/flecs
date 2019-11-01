@@ -1,5 +1,63 @@
 #include "flecs_private.h"
 
+static
+void register_system(
+    ecs_world_t *world,
+    ecs_entity_t system,
+    EcsRowSystem *system_data,
+    bool needs_tables)
+{
+    ecs_entity_t *elem = NULL;
+
+    ecs_system_kind_t kind = system_data->base.kind;
+
+    if (!needs_tables) {
+        if (kind == EcsOnUpdate) {
+            elem = ecs_vector_add(&world->tasks, &handle_arr_params);
+        } else if (kind == EcsOnRemove) {
+            elem = ecs_vector_add(&world->fini_tasks, &handle_arr_params);
+        }
+    } else if (kind == EcsOnNew) {
+        ecs_entity_array_t components = {
+            .array = ecs_vector_first(system_data->components),
+            .count = ecs_vector_count(system_data->components)
+        };
+
+        ecs_table_t *table = ecs_table_find_or_create(
+                world, &world->main_stage, &components);
+        ecs_assert(table != NULL, ECS_INTERNAL_ERROR, NULL);      
+
+        elem = ecs_vector_add(&table->on_new, &handle_arr_params);  
+    } else {
+        ecs_assert(
+            ecs_vector_count(system_data->components) == 1, 
+            ECS_TOO_MANY_COMPONENTS_FOR_SYSTEM, 
+            ecs_get_id(world, system));
+
+        ecs_component_data_t* cdata = ecs_vector_first(world->component_data);
+        ecs_entity_t c = *(ecs_entity_t*)ecs_vector_first(
+                system_data->components);
+
+        switch (kind) {       
+        case EcsOnAdd:
+            elem = ecs_vector_add(&cdata[c].on_add, &handle_arr_params);
+            break;
+        case EcsOnRemove:
+            elem = ecs_vector_add(&cdata[c].on_remove, &handle_arr_params);
+            break;
+        case EcsOnSet:
+            elem = ecs_vector_add(&cdata[c].on_set, &handle_arr_params);
+            break; 
+        default:
+            ecs_abort(ECS_INTERNAL_ERROR, NULL);
+        }
+    }
+
+    if (elem) {
+        *elem = system;
+    }      
+}
+
 /** Create a new row system. A row system is a system executed on a single row,
  * typically as a result of a ADD, REMOVE or SET trigger.
  */
@@ -7,7 +65,7 @@ static
 ecs_entity_t new_row_system(
     ecs_world_t *world,
     const char *id,
-    EcsSystemKind kind,
+    ecs_system_kind_t kind,
     bool needs_tables,
     ecs_signature_t *sig,
     ecs_system_action_t action)
@@ -47,19 +105,7 @@ ecs_entity_t new_row_system(
         }
     }
 
-    ecs_entity_t *elem = NULL;
-
-    if (!needs_tables) {
-        if (kind == EcsOnUpdate) {
-            elem = ecs_vector_add(&world->tasks, &handle_arr_params);
-        } else if (kind == EcsOnRemove) {
-            elem = ecs_vector_add(&world->fini_tasks, &handle_arr_params);
-        }
-    }
-
-    if (elem) {
-        *elem = result;
-    }
+    register_system(world, result, system_data, needs_tables);
 
     sig->owned = false;
 
@@ -77,7 +123,7 @@ void ecs_row_system_free(
 
 
 /** Run system on a single row */
-void ecs_notify_row_system(
+void ecs_run_row_system(
     ecs_world_t *world,
     ecs_entity_t system,
     ecs_type_t type,
@@ -199,7 +245,7 @@ void ecs_run_task(
     ecs_world_t *world,
     ecs_entity_t system)
 {
-    ecs_notify_row_system(world, system, NULL, NULL, NULL, 0, 1);
+    ecs_run_row_system(world, system, NULL, NULL, NULL, 0, 1);
 }
 
 
@@ -208,7 +254,7 @@ void ecs_run_task(
 ecs_entity_t ecs_new_system(
     ecs_world_t *world,
     const char *id,
-    EcsSystemKind kind,
+    ecs_system_kind_t kind,
     ecs_signature_t *sig,
     ecs_system_action_t action)
 {

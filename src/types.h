@@ -244,7 +244,7 @@ struct ecs_query_t {
 typedef struct EcsSystem {
     ecs_system_action_t action;    /* Callback to be invoked for matching rows */
     void *ctx;                     /* Userdata for system */
-    EcsSystemKind kind;            /* Kind of system */
+    ecs_system_kind_t kind;        /* Kind of system */
     float time_spent;              /* Time spent on running system */
     bool enabled;                  /* Is system enabled or not */
 } EcsSystem;

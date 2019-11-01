@@ -92,7 +92,7 @@ typedef struct EcsPrefab {
 } EcsPrefab;
 
 /** System kinds determine when and how systems are ran */
-typedef enum EcsSystemKind {
+typedef enum ecs_system_kind_t {
     /* Periodic systems */
     EcsOnLoad,
     EcsPostLoad,
@@ -111,7 +111,7 @@ typedef enum EcsSystemKind {
     EcsOnAdd,
     EcsOnRemove,
     EcsOnSet
-} EcsSystemKind;
+} ecs_system_kind_t;
 
 /** Reference to a component from another entity */
 typedef struct ecs_reference_t {
@@ -262,8 +262,8 @@ extern ecs_type_t
 #define ECS_ENTITY_FLAGS_START (ECS_CHILDOF)
 #define ECS_ENTITY_FLAGS_MASK ((ecs_entity_t)(ECS_INSTANCEOF | ECS_CHILDOF))
 #define ECS_ENTITY_MASK ((ecs_entity_t)~ECS_ENTITY_FLAGS_MASK)
-#define ECS_SINGLETON ((ecs_entity_t)(ECS_ENTITY_FLAGS_MASK - 1))
-#define ECS_INVALID_ENTITY (0)
+#define ECS_SINGLETON ((ecs_entity_t)(ECS_ENTITY_MASK) - 1)
+#define ECS_INVALID_ENTITY (0)    
 
 /* This allows passing 0 as type to functions that accept types */
 #define T0 (0)
@@ -819,13 +819,10 @@ typedef struct ecs_table_data_t {
  * table and inserted into the new table. 
  */
 
-/* TODO 
 FLECS_EXPORT
 ecs_entity_t ecs_set_w_data(
     ecs_world_t *world,
-    ecs_table_data_t *data); */
-
-#define ecs_set_w_data(world, ...) 0
+    ecs_table_data_t *data);
 
 /** Create a new child entity.
  * Child entities are equivalent to normal entities, but can additionally be 
@@ -1506,7 +1503,7 @@ ecs_type_t ecs_type_add(
  * type_add. If type_add contains components that are removed by type_remove,
  * the result will contain the components in type_add.
  *
- * @oaram world The world.
+ * @param world The world.
  * @param type The original type.
  * @param type_add The type to add to the original type.
  * @param type_remove The type to remove from the original type.
@@ -2035,7 +2032,7 @@ FLECS_EXPORT
 ecs_entity_t ecs_new_system(
     ecs_world_t *world,
     const char *id,
-    EcsSystemKind kind,
+    ecs_system_kind_t kind,
     ecs_signature_t *sig,
     ecs_system_action_t action);
 
@@ -2173,6 +2170,7 @@ void _ecs_assert(
 #define ECS_INVALID_PREFAB_CHILD_TYPE (33)
 #define ECS_UNINITIALIZED_READ (34)
 #define ECS_UNSUPPORTED (35)
+#define ECS_TOO_MANY_COMPONENTS_FOR_SYSTEM (36)
 
 /* -- Convenience macro's for wrapping around generated types and entities -- */
 

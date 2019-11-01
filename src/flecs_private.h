@@ -75,7 +75,7 @@ void ecs_notify_systems_of_table(
 void ecs_world_activate_system(
     ecs_world_t *world,
     ecs_entity_t system,
-    EcsSystemKind kind,
+    ecs_system_kind_t kind,
     bool active);
 
 /* Get current thread-specific stage */
@@ -164,6 +164,12 @@ bool ecs_type_match_w_filter(
     ecs_type_t type,
     ecs_type_filter_t *filter);
 
+/*? Find table for type */
+ecs_table_t* ecs_type_find_table(
+    ecs_world_t *world,
+    ecs_stage_t *stage,
+    ecs_type_t type);
+
 /* -- Table API -- */
 
 /* Initialize root table node */
@@ -239,6 +245,33 @@ int16_t ecs_columns_set_size(
 uint64_t ecs_columns_count(
     ecs_table_t *table);
 
+void ecs_columns_swap(
+    ecs_world_t *world,
+    ecs_stage_t *stage,
+    ecs_table_t *table,
+    ecs_column_t *columns,
+    int32_t row_1,
+    int32_t row_2,
+    ecs_record_t *row_ptr_1,
+    ecs_record_t *row_ptr_2);
+
+void ecs_columns_move_back_and_swap(
+    ecs_world_t *world,
+    ecs_stage_t *stage,
+    ecs_table_t *table,
+    ecs_column_t *columns,
+    uint32_t row,
+    uint32_t count);  
+
+void ecs_columns_merge(
+    ecs_world_t *world,
+    ecs_table_t *new_table,
+    ecs_table_t *old_table);    
+
+void ecs_columns_clear(
+    ecs_table_t *table,
+    ecs_column_t *columns);      
+
 /* Return size of table row */
 uint32_t ecs_table_row_size(
     ecs_table_t *table);
@@ -274,13 +307,13 @@ void ecs_table_free(
     ecs_world_t *world,
     ecs_table_t *table);
 
-void ecs_table_merge(
-    ecs_world_t *world,
-    ecs_table_t *new_table,
-    ecs_table_t *old_table);
-
 void ecs_table_clear(
     ecs_world_t *world,
+    ecs_table_t *table);
+
+ecs_column_t* ecs_table_get_columns(
+    ecs_world_t *world,
+    ecs_stage_t *stage,
     ecs_table_t *table);
 
 /* -- System API -- */
@@ -289,7 +322,7 @@ void ecs_table_clear(
 ecs_entity_t ecs_col_system_new(
     ecs_world_t *world,
     const char *id,
-    EcsSystemKind kind,
+    ecs_system_kind_t kind,
     ecs_signature_t *sig,
     ecs_system_action_t action);
 
@@ -316,7 +349,7 @@ void ecs_run_task(
     ecs_entity_t system);
 
 /* Invoke row system */
-void ecs_notify_row_system(
+void ecs_run_row_system(
     ecs_world_t *world,
     ecs_entity_t system,
     ecs_type_t type,

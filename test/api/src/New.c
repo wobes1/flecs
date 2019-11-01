@@ -136,7 +136,7 @@ void New_type_w_2_tags() {
     ecs_entity_t e = ecs_new(world, Type);
     test_assert(e != 0);
     test_assert(ecs_has(world, e, Tag_1));
-    test_assert(ecs_has(world, e, Tag_1));
+    test_assert(ecs_has(world, e, Tag_2));
     
     ecs_fini(world);
 }
@@ -146,10 +146,10 @@ void New_type_w_tag_mixed() {
 
     ECS_TAG(world, Tag);
     ECS_COMPONENT(world, Position);
-
     ECS_TYPE(world, Type, Position, Tag);
 
     ecs_entity_t e = ecs_new(world, Type);
+
     test_assert(e != 0);
     test_assert(ecs_has(world, e, Tag));
     test_assert(ecs_has(world, e, Position));

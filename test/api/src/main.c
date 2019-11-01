@@ -289,29 +289,37 @@ void SystemMisc_system_w_or_disabled(void);
 void SystemMisc_system_w_or_disabled_and_prefab(void);
 void SystemMisc_table_columns_access(void);
 
+// Testsuite 'SystemOnNew'
+void SystemOnNew_new_match_1_of_1(void);
+void SystemOnNew_new_match_1_of_2(void);
+void SystemOnNew_new_no_match_1(void);
+void SystemOnNew_new_no_match_2_of_1(void);
+void SystemOnNew_new_no_match_2_of_3(void);
+void SystemOnNew_new_w_count_match_1_of_1(void);
+void SystemOnNew_clone_match_1_of_1(void);
+void SystemOnNew_clone_match_1_of_2(void);
+void SystemOnNew_clone_match_2_of_2(void);
+void SystemOnNew_clone_match_2_of_3(void);
+void SystemOnNew_disabled_system(void);
+void SystemOnNew_2_systems_w_table_creation(void);
+void SystemOnNew_2_systems_w_table_creation_in_progress(void);
+void SystemOnNew_sys_context(void);
+void SystemOnNew_get_sys_context_from_param(void);
+
 // Testsuite 'SystemOnAdd'
 void SystemOnAdd_new_match_1_of_1(void);
 void SystemOnAdd_new_match_1_of_2(void);
 void SystemOnAdd_new_no_match_1(void);
-void SystemOnAdd_new_no_match_2_of_1(void);
-void SystemOnAdd_new_no_match_2_of_3(void);
 void SystemOnAdd_new_w_count_match_1_of_1(void);
 void SystemOnAdd_add_match_1_of_1(void);
 void SystemOnAdd_add_match_1_of_2(void);
-void SystemOnAdd_add_match_2_of_2(void);
-void SystemOnAdd_add_match_2_of_3(void);
 void SystemOnAdd_add_no_match_1(void);
-void SystemOnAdd_add_no_match_2_of_1(void);
-void SystemOnAdd_add_no_match_2_of_3(void);
 void SystemOnAdd_set_match_1_of_1(void);
 void SystemOnAdd_set_no_match_1(void);
 void SystemOnAdd_clone_match_1_of_1(void);
 void SystemOnAdd_clone_match_1_of_2(void);
-void SystemOnAdd_clone_match_2_of_2(void);
-void SystemOnAdd_clone_match_2_of_3(void);
 void SystemOnAdd_add_again_1(void);
 void SystemOnAdd_set_again_1(void);
-void SystemOnAdd_add_again_2(void);
 void SystemOnAdd_add_again_1_of_2(void);
 void SystemOnAdd_override_after_add_in_on_add(void);
 void SystemOnAdd_set_after_add_in_on_add(void);
@@ -326,18 +334,11 @@ void SystemOnAdd_get_sys_context_from_param(void);
 // Testsuite 'SystemOnRemove'
 void SystemOnRemove_remove_match_1_of_1(void);
 void SystemOnRemove_remove_match_1_of_2(void);
-void SystemOnRemove_remove_match_2_of_2(void);
-void SystemOnRemove_remove_match_2_of_3(void);
 void SystemOnRemove_remove_no_match_1(void);
-void SystemOnRemove_remove_no_match_2_of_1(void);
-void SystemOnRemove_remove_no_match_2_of_3(void);
 void SystemOnRemove_delete_match_1_of_1(void);
 void SystemOnRemove_delete_match_1_of_2(void);
-void SystemOnRemove_delete_match_2_of_2(void);
-void SystemOnRemove_delete_match_2_of_3(void);
 void SystemOnRemove_delete_no_match_1(void);
 void SystemOnRemove_delete_no_match_2_of_1(void);
-void SystemOnRemove_delete_no_match_2_of_3(void);
 void SystemOnRemove_disabled_system(void);
 
 // Testsuite 'SystemOnSet'
@@ -1895,8 +1896,74 @@ static bake_test_suite suites[] = {
         }
     },
     {
+        .id = "SystemOnNew",
+        .testcase_count = 15,
+        .testcases = (bake_test_case[]){
+            {
+                .id = "new_match_1_of_1",
+                .function = SystemOnNew_new_match_1_of_1
+            },
+            {
+                .id = "new_match_1_of_2",
+                .function = SystemOnNew_new_match_1_of_2
+            },
+            {
+                .id = "new_no_match_1",
+                .function = SystemOnNew_new_no_match_1
+            },
+            {
+                .id = "new_no_match_2_of_1",
+                .function = SystemOnNew_new_no_match_2_of_1
+            },
+            {
+                .id = "new_no_match_2_of_3",
+                .function = SystemOnNew_new_no_match_2_of_3
+            },
+            {
+                .id = "new_w_count_match_1_of_1",
+                .function = SystemOnNew_new_w_count_match_1_of_1
+            },
+            {
+                .id = "clone_match_1_of_1",
+                .function = SystemOnNew_clone_match_1_of_1
+            },
+            {
+                .id = "clone_match_1_of_2",
+                .function = SystemOnNew_clone_match_1_of_2
+            },
+            {
+                .id = "clone_match_2_of_2",
+                .function = SystemOnNew_clone_match_2_of_2
+            },
+            {
+                .id = "clone_match_2_of_3",
+                .function = SystemOnNew_clone_match_2_of_3
+            },
+            {
+                .id = "disabled_system",
+                .function = SystemOnNew_disabled_system
+            },
+            {
+                .id = "2_systems_w_table_creation",
+                .function = SystemOnNew_2_systems_w_table_creation
+            },
+            {
+                .id = "2_systems_w_table_creation_in_progress",
+                .function = SystemOnNew_2_systems_w_table_creation_in_progress
+            },
+            {
+                .id = "sys_context",
+                .function = SystemOnNew_sys_context
+            },
+            {
+                .id = "get_sys_context_from_param",
+                .function = SystemOnNew_get_sys_context_from_param
+            }
+        }
+    },
+    {
         .id = "SystemOnAdd",
-        .testcase_count = 32,
+        .testcase_count = 23,
         .testcases = (bake_test_case[]){
             {
                 .id = "new_match_1_of_1",
@@ -1911,14 +1978,6 @@ static bake_test_suite suites[] = {
                 .function = SystemOnAdd_new_no_match_1
             },
             {
-                .id = "new_no_match_2_of_1",
-                .function = SystemOnAdd_new_no_match_2_of_1
-            },
-            {
-                .id = "new_no_match_2_of_3",
-                .function = SystemOnAdd_new_no_match_2_of_3
-            },
-            {
                 .id = "new_w_count_match_1_of_1",
                 .function = SystemOnAdd_new_w_count_match_1_of_1
             },
@@ -1931,24 +1990,8 @@ static bake_test_suite suites[] = {
                 .function = SystemOnAdd_add_match_1_of_2
             },
             {
-                .id = "add_match_2_of_2",
-                .function = SystemOnAdd_add_match_2_of_2
-            },
-            {
-                .id = "add_match_2_of_3",
-                .function = SystemOnAdd_add_match_2_of_3
-            },
-            {
                 .id = "add_no_match_1",
                 .function = SystemOnAdd_add_no_match_1
-            },
-            {
-                .id = "add_no_match_2_of_1",
-                .function = SystemOnAdd_add_no_match_2_of_1
-            },
-            {
-                .id = "add_no_match_2_of_3",
-                .function = SystemOnAdd_add_no_match_2_of_3
             },
             {
                 .id = "set_match_1_of_1",
@@ -1967,24 +2010,12 @@ static bake_test_suite suites[] = {
                 .function = SystemOnAdd_clone_match_1_of_2
             },
             {
-                .id = "clone_match_2_of_2",
-                .function = SystemOnAdd_clone_match_2_of_2
-            },
-            {
-                .id = "clone_match_2_of_3",
-                .function = SystemOnAdd_clone_match_2_of_3
-            },
-            {
                 .id = "add_again_1",
                 .function = SystemOnAdd_add_again_1
             },
             {
                 .id = "set_again_1",
                 .function = SystemOnAdd_set_again_1
-            },
-            {
-                .id = "add_again_2",
-                .function = SystemOnAdd_add_again_2
             },
             {
                 .id = "add_again_1_of_2",
@@ -2030,7 +2061,7 @@ static bake_test_suite suites[] = {
     },
     {
         .id = "SystemOnRemove",
-        .testcase_count = 15,
+        .testcase_count = 8,
         .testcases = (bake_test_case[]){
             {
                 .id = "remove_match_1_of_1",
@@ -2041,24 +2072,8 @@ static bake_test_suite suites[] = {
                 .function = SystemOnRemove_remove_match_1_of_2
             },
             {
-                .id = "remove_match_2_of_2",
-                .function = SystemOnRemove_remove_match_2_of_2
-            },
-            {
-                .id = "remove_match_2_of_3",
-                .function = SystemOnRemove_remove_match_2_of_3
-            },
-            {
                 .id = "remove_no_match_1",
                 .function = SystemOnRemove_remove_no_match_1
-            },
-            {
-                .id = "remove_no_match_2_of_1",
-                .function = SystemOnRemove_remove_no_match_2_of_1
-            },
-            {
-                .id = "remove_no_match_2_of_3",
-                .function = SystemOnRemove_remove_no_match_2_of_3
             },
             {
                 .id = "delete_match_1_of_1",
@@ -2069,24 +2084,12 @@ static bake_test_suite suites[] = {
                 .function = SystemOnRemove_delete_match_1_of_2
             },
             {
-                .id = "delete_match_2_of_2",
-                .function = SystemOnRemove_delete_match_2_of_2
-            },
-            {
-                .id = "delete_match_2_of_3",
-                .function = SystemOnRemove_delete_match_2_of_3
-            },
-            {
                 .id = "delete_no_match_1",
                 .function = SystemOnRemove_delete_no_match_1
             },
             {
                 .id = "delete_no_match_2_of_1",
                 .function = SystemOnRemove_delete_no_match_2_of_1
-            },
-            {
-                .id = "delete_no_match_2_of_3",
-                .function = SystemOnRemove_delete_no_match_2_of_3
             },
             {
                 .id = "disabled_system",
@@ -3899,5 +3902,5 @@ static bake_test_suite suites[] = {
 
 int main(int argc, char *argv[]) {
     ut_init(argv[0]);
-    return bake_test_run("api", argc, argv, suites, 38);
+    return bake_test_run("api", argc, argv, suites, 39);
 }

@@ -3,7 +3,7 @@
 ecs_entity_t ecs_col_system_new(
     ecs_world_t *world,
     const char *id,
-    EcsSystemKind kind,
+    ecs_system_kind_t kind,
     ecs_signature_t *sig,
     ecs_system_action_t action)
 {

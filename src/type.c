@@ -340,14 +340,20 @@ EcsTypeComponent type_from_vec(
     ecs_vector_t *vec)
 {
     EcsTypeComponent result = {0, 0};
-    
+
+    int32_t count = ecs_vector_count(vec);
+    if (!count) {
+        return result;
+    }
+
     /* Determining the type is simple, just find the table with the specified
      * entities. */
     ecs_table_t *table = ecs_table_find_or_create(world, NULL, 
     &(ecs_entity_array_t){
         .array = ecs_vector_first(vec),
-        .count = ecs_vector_count(vec)
+        .count = count
     });
+    
     ecs_assert(table != NULL, ECS_INTERNAL_ERROR, NULL);
     result.type = table->type;
 
@@ -356,7 +362,7 @@ EcsTypeComponent type_from_vec(
      * When the entity contains an EcsTypeComponent, the resulting type can have
      * multiple entities. */
     ecs_entity_t *array = ecs_vector_first(vec);
-    uint32_t i, count = ecs_vector_count(vec);
+    uint32_t i;
     
     table = NULL; /* Start from root */
 

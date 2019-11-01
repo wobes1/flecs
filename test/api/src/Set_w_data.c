@@ -710,7 +710,7 @@ void Set_w_data_2_columns_3_rows_component_order() {
     ECS_TYPE(world, Type, Position, Velocity);
 
     ecs_entity_t e = ecs_set_w_data(world, &(ecs_table_data_t){
-        .column_count = 3,
+        .column_count = 2,
         .row_count = 3,
         .entities = NULL,
         .components = (ecs_entity_t[]){ecs_entity(Velocity), ecs_entity(Position)},

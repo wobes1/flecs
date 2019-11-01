@@ -293,8 +293,10 @@ void* ecs_vector_first(
 void* ecs_vector_get(
     const ecs_vector_t *array,
     const ecs_vector_params_t *params,
-    uint32_t index)
+    int32_t index)
 {
+    ecs_assert(index >= 0, ECS_INTERNAL_ERROR, NULL);
+
     uint32_t count = array->count;
     uint32_t element_size = params->element_size;
 

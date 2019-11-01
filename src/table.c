@@ -146,12 +146,32 @@ void remove_entity_from_type(
 }
 
 static
+ecs_edge_t* get_edge(
+    ecs_table_t *node,
+    ecs_entity_t e)
+{
+    ecs_edge_t *edge;
+
+    if (e < ECS_MAX_COMPONENTS) {
+        edge = &node->edges[e];
+    } else if (e & ECS_CHILDOF) {
+        edge = &node->parent_edge;
+    } else {
+        ecs_edge_t new_edge = {0};
+        ecs_map_set(node->hi_edges, e, &new_edge);
+        edge = ecs_map_get(node->hi_edges, ecs_edge_t, e);        
+    }
+
+    return edge;
+}
+
+static
 void create_backlink_after_add(
     ecs_table_t *next,
     ecs_table_t *prev,
     ecs_entity_t add)
 {
-    ecs_edge_t *edge = &next->edges[add];
+    ecs_edge_t *edge = get_edge(next, add);
     edge->add = NULL;
     edge->remove = prev;
 }
@@ -162,7 +182,7 @@ void create_backlink_after_remove(
     ecs_table_t *prev,
     ecs_entity_t add)
 {
-    ecs_edge_t *edge = &next->edges[add];
+    ecs_edge_t *edge = get_edge(next, add);
     edge->add = prev;
     edge->remove = NULL;
 }
@@ -259,7 +279,7 @@ ecs_table_t* traverse_remove(
 }
 
 static
-ecs_table_t* traverse_add_parent(
+ecs_table_t* traverse_hi_edges(
     ecs_world_t *world,
     ecs_stage_t *stage,
     ecs_table_t *node,
@@ -273,25 +293,35 @@ ecs_table_t* traverse_add_parent(
 
     for (; i < count; i ++) {
         ecs_entity_t e = entities[i];
+        ecs_entity_t next_e = e;
+        ecs_table_t *next;
+        ecs_edge_t *edge;
 
         if (e & ECS_CHILDOF) {
-            ecs_edge_t *edge = &node->parent_edge;
-            ecs_table_t *next = edge->add;
-
-            if (!next) {
-                next = edge->add = find_or_create_table_include(
-                    world, stage, node, ECS_CHILDOF);
-                
-                ecs_assert(next != NULL, ECS_INTERNAL_ERROR, NULL);                    
-            }
-
-            if (added) added->array[added->count ++] = e;
-
-            node = next;
+            edge = &node->parent_edge;
+            next_e = ECS_CHILDOF;
         } else {
-            /* No more children to add */
-            break;
+            edge = get_edge(node, e);
         }
+
+        next = edge->add;
+
+        if (!next) {
+            next = edge->add = find_or_create_table_include(
+                world, stage, node, next_e);
+            
+            ecs_assert(next != NULL, ECS_INTERNAL_ERROR, NULL);                    
+        }
+
+        /* Hi edges should are not added to the added array. This array is used
+         * to determine if component actions need to be executed, and entities
+         * that are not a component (>ECS_MAX_COMPONENT) there is never any
+         * component action.
+         *
+         if (added && node != next) added->array[added->count ++] = e;
+         */
+
+        node = next;        
     }
 
     return node;
@@ -312,10 +342,10 @@ ecs_table_t* traverse_add(
         ecs_entity_t e = entities[i];
         ecs_table_t *next;
 
-        if (e >= ECS_ENTITY_FLAGS_START) {
-            /* Continue looping nodes with flags in separate loop to limit
-                * the additional performance overhead of comparing flags. */
-            return traverse_add_parent(world, stage, node, e, i, to_add, added);
+        /* If the array is not a simple component array, use a function that
+         * handles all cases, but is slower */
+        if (e >= ECS_MAX_COMPONENTS) {
+            return traverse_hi_edges(world, stage, node, e, i, to_add, added);
         }
 
         /* There should always be an edge for adding */
@@ -327,7 +357,7 @@ ecs_table_t* traverse_add(
             ecs_assert(next != NULL, ECS_INTERNAL_ERROR, NULL);
         }
 
-        if (added) added->array[added->count ++] = e;
+        if (added && node != next) added->array[added->count ++] = e;
 
         node = next;
     }
@@ -346,6 +376,22 @@ void ecs_init_root_table(
     init_table(world, &world->table_root, &entities);
 }
 
+ecs_column_t* ecs_table_get_columns(
+    ecs_world_t *world,
+    ecs_stage_t *stage,
+    ecs_table_t *table)
+{
+    if (!stage || stage == &world->main_stage) {
+        ecs_column_t *result = table->columns;
+        if (!result) {
+            result = table->columns = ecs_columns_new(world, NULL, table);
+        }
+        return result;
+    } else {
+        return ecs_map_get_ptr(stage->data_stage, ecs_column_t*, (uintptr_t)table->type);
+    } 
+}
+
 void ecs_table_fini(
     ecs_world_t *world,
     ecs_table_t *table)
@@ -357,34 +403,75 @@ void ecs_table_fini(
     ecs_vector_free(table->on_new);
 }
 
-static
-void ecs_table_free_columns(
-    ecs_table_t *table)
-{
-    uint32_t i, column_count = ecs_vector_count(table->type);
-    
-    for (i = 0; i < column_count + 1; i ++) {
-        ecs_vector_free(table->columns[i].data);
-        table->columns[i].data = NULL;
-    }
-}
-
 void ecs_table_clear(
     ecs_world_t *world,
     ecs_table_t *table)
 {
-    ecs_table_free_columns(table);
-    ecs_table_fini(world, table);
+    if (table->columns) {
+        ecs_columns_clear(table, table->columns);
+    }
+}
+
+static
+int ecs_entity_compare(
+    const void *e1,
+    const void *e2)
+{
+    const ecs_entity_t v1 = *(ecs_entity_t*)e1;
+    const ecs_entity_t v2 = *(ecs_entity_t*)e2;
+    return v1 - v2;
+}
+
+static
+bool ecs_entity_array_is_ordered(
+    ecs_entity_array_t *entities)
+{
+    ecs_entity_t prev = 0;
+    ecs_entity_t *array = entities->array;
+    uint32_t i, count = entities->count;
+
+    for (i = 0; i < count; i ++) {
+        if (array[i] <= prev) {
+            return false;
+        }
+        prev = array[i];
+    }    
+
+    return true;
+}
+
+static
+void ecs_entity_array_dedup(
+    ecs_entity_array_t *entities)
+{
+    ecs_entity_t *array = entities->array;
+    uint32_t j, k, count = entities->count;
+    ecs_entity_t prev = array[0];
+
+    for (k = j = 1; k < count; j ++, k++) {
+        ecs_entity_t e = array[k];
+        if (e == prev) {
+            k ++;
+        }
+
+        array[j] = e;
+        prev = e;
+    }
+
+    entities->count -= (k - j);
 }
 
 ecs_table_t *ecs_table_find_or_create(
     ecs_world_t *world,
     ecs_stage_t *stage,
     ecs_entity_array_t *entities)
-{
+{    
     uint32_t count;
     if (entities && (count = entities->count)) 
     {
+        bool is_ordered = true, order_checked = false;
+        ecs_entity_t *ordered_entities = NULL;
+
         ecs_table_t *table = &world->table_root;
         ecs_entity_t *array = entities->array;
         uint32_t i;
@@ -401,6 +488,9 @@ ecs_table_t *ecs_table_find_or_create(
                     edge = ecs_map_get(table->hi_edges, ecs_edge_t, e);
                     if (edge) {
                         table = edge->add;
+                    } else {
+                        edge = get_edge(table, e);
+                        table = NULL;
                     }
                 }
             } else {
@@ -410,23 +500,59 @@ ecs_table_t *ecs_table_find_or_create(
             }
 
             if (!table) {
-                ecs_entity_array_t entities = {
-                    .array = array,
-                    .count = i + 1
-                };
+                /* A new table needs to be created. To ensure that one table is
+                 * created per combination of components, regardless of in
+                 * which order the components are specified, the entity array
+                 * with which the table is created must be ordered. */
 
-                table = create_table(world, &entities);
-                
-                if (!edge) {
-                    ecs_edge_t new_edge = {
-                        .add = table
+                /* First, determine of the entities array is ordered. Do this
+                 * only once per lookup */
+                if (!order_checked) {
+                    is_ordered = ecs_entity_array_is_ordered(entities);
+                    order_checked = true;
+                }      
+
+                /* If the array is ordered, we can use it to create the table */
+                if (is_ordered) {
+                    ecs_entity_array_t table_entities = {
+                        .array = array,
+                        .count = i + 1
                     };
-                    
-                    ecs_map_set(table->hi_edges, e, &new_edge);
-                    edge = ecs_map_get(table->hi_edges, ecs_edge_t, e);
+
+                    /* If the original array is ordered and the edge was empty, 
+                    * the table does not exist, so create it */
+                    table = create_table(world, &table_entities);
                 } else {
-                    edge->add = table;
-                }
+                    uint32_t count_now = i + 1;
+
+                    /* Create an ordered array if we don't have one yet */
+                    if (!ordered_entities) {
+                        ordered_entities = ecs_os_alloca(ecs_entity_t, count);
+                    }
+                    
+                    memcpy(ordered_entities, array, 
+                        count_now * sizeof(ecs_entity_t));
+
+                    qsort(ordered_entities, count_now, 
+                        sizeof(ecs_entity_t), ecs_entity_compare);
+
+                    ecs_entity_array_t table_entities = {
+                        .array = ordered_entities,
+                        .count = count_now
+                    };
+
+                    /* Now that the array is sorted, dedup */
+                    ecs_entity_array_dedup(&table_entities);
+
+                    /* If the original array is unordered we want to check if an
+                    * existing table can be found using the ordered array */
+                    table = ecs_table_find_or_create(
+                        world, stage, &table_entities);                                
+                }                    
+
+                ecs_assert(table != NULL, ECS_INTERNAL_ERROR, NULL);
+
+                edge->add = table;
             }
         }
 
@@ -467,126 +593,4 @@ ecs_table_t *ecs_table_traverse(
     }
 
     return node;
-}
-
-void ecs_table_merge(
-    ecs_world_t *world,
-    ecs_table_t *new_table,
-    ecs_table_t *old_table)
-{
-    ecs_assert(old_table != NULL, ECS_INTERNAL_ERROR, NULL);
-    ecs_assert(new_table != old_table, ECS_INTERNAL_ERROR, NULL);
-
-    ecs_type_t new_type = new_table ? new_table->type : NULL;
-    ecs_type_t old_type = old_table->type;
-    ecs_assert(new_type != old_type, ECS_INTERNAL_ERROR, NULL);
-
-    ecs_column_t *new_columns = new_table ? new_table->columns : NULL;
-    ecs_column_t *old_columns = old_table->columns;
-
-    if (!old_columns) {
-        return;
-    }
-
-    uint32_t old_count = old_columns->data ? ecs_vector_count(old_columns->data) : 0;
-    uint32_t new_count = 0;
-    if (new_columns) {
-        new_count = new_columns->data ? ecs_vector_count(new_columns->data) : 0;
-    }
-
-    /* First, update entity index so old entities point to new type */
-    ecs_entity_t *old_entities = ecs_vector_first(old_columns[0].data);
-    uint32_t i;
-    for(i = 0; i < old_count; i ++) {
-        ecs_record_t *row = ecs_sparse_get_or_set_sparse(
-            world->entity_index, ecs_record_t, old_entities[i], NULL);
-
-        row->table = new_table;
-        row->row = i + new_count;
-    }
-
-    if (!new_table) {
-        ecs_table_clear(world, old_table);
-        return;
-    }
-
-    uint16_t i_new, new_component_count = ecs_vector_count(new_type);
-    uint16_t i_old = 0, old_component_count = ecs_vector_count(old_type);
-    ecs_entity_t *new_components = ecs_vector_first(new_type);
-    ecs_entity_t *old_components = ecs_vector_first(old_type);
-
-    if (!old_count) {
-        return;
-    }
-
-    for (i_new = 0; i_new <= new_component_count; ) {
-        if (i_old == old_component_count) {
-            break;
-        }
-
-        ecs_entity_t new_component = 0;
-        ecs_entity_t old_component = 0;
-        uint32_t size = 0;
-
-        if (i_new) {
-            new_component = new_components[i_new - 1];
-            old_component = old_components[i_old - 1];
-            size = new_columns[i_new].size;
-        } else {
-            size = sizeof(ecs_entity_t);
-        }
-
-        if ((new_component & ECS_ENTITY_FLAGS_MASK) || 
-            (old_component & ECS_ENTITY_FLAGS_MASK)) 
-        {
-            break;
-        }
-
-        if (new_component == old_component) {
-            /* If the new table is empty, move column to new table */
-            if (!new_count) {
-                if (!new_columns) {
-                    new_columns = ecs_columns_new(world, &world->main_stage, new_table);
-                    new_table->columns = new_columns;
-                }
-
-                if (new_columns[i_new].data) {
-                    ecs_vector_free(new_columns[i_new].data);
-                }
-                new_columns[i_new].data = old_columns[i_old].data;
-                old_columns[i_old].data = NULL;
-            
-            /* If the new table is not empty, copy the contents from the
-             * smallest into the largest vector. */
-            } else {
-                ecs_vector_t *dst = new_columns[i_new].data;
-                ecs_vector_t *src = old_columns[i_old].data;
-
-                ecs_vector_params_t params = {.element_size = size};
-                ecs_vector_set_count(&dst, &params, new_count + old_count);
-                
-                void *dst_ptr = ecs_vector_first(dst);
-                void *src_ptr = ecs_vector_first(src);
-
-                dst_ptr = ECS_OFFSET(dst_ptr, size * old_count);
-                memcpy(dst_ptr, src_ptr, size * old_count);
-
-                ecs_vector_free(src);
-                old_columns[i_old].data = NULL;
-                new_columns[i_new].data = dst;
-            }
-            
-            i_new ++;
-            i_old ++;
-        } else if (new_component < old_component) {
-            /* This should not happen. A table should never be merged to
-             * another table of which the type is not a subset. */
-            ecs_abort(ECS_INTERNAL_ERROR, NULL);
-        } else if (new_component > old_component) {
-            /* Old column does not occur in new table, remove */
-            ecs_vector_free(old_columns[i_old].data);
-            old_columns[i_old].data = NULL;
-            i_old ++;
-        }
-    }
 }
