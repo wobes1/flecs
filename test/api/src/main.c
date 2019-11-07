@@ -338,7 +338,6 @@ void SystemOnRemove_remove_no_match_1(void);
 void SystemOnRemove_delete_match_1_of_1(void);
 void SystemOnRemove_delete_match_1_of_2(void);
 void SystemOnRemove_delete_no_match_1(void);
-void SystemOnRemove_delete_no_match_2_of_1(void);
 void SystemOnRemove_disabled_system(void);
 
 // Testsuite 'SystemOnSet'
@@ -2061,7 +2060,7 @@ static bake_test_suite suites[] = {
     },
     {
         .id = "SystemOnRemove",
-        .testcase_count = 8,
+        .testcase_count = 7,
         .testcases = (bake_test_case[]){
             {
                 .id = "remove_match_1_of_1",
@@ -2086,10 +2085,6 @@ static bake_test_suite suites[] = {
             {
                 .id = "delete_no_match_1",
                 .function = SystemOnRemove_delete_no_match_1
-            },
-            {
-                .id = "delete_no_match_2_of_1",
-                .function = SystemOnRemove_delete_no_match_2_of_1
             },
             {
                 .id = "disabled_system",

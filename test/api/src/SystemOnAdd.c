@@ -366,13 +366,11 @@ void SystemOnAdd_add_again_1_of_2() {
     ecs_entity_t e = ecs_new(world, 0);
     test_assert(e != 0);
 
-    printf("Add #1\n");
     ecs_add(world, e, TypePV);
 
     SysTestData ctx = {0};
     ecs_set_context(world, &ctx);
 
-    printf("Add #2\n");
     ecs_add(world, e, TypePM);
 
     test_int(ctx.count, 0);

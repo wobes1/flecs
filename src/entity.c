@@ -216,8 +216,10 @@ void update_info(
     /* If index is negative, this entity is being watched */
     int32_t row = record->row;
     bool is_watched = row < 0;
-    info->row = row * -(is_watched * 2 - 1) - 1;
+    info->row = row * -(is_watched * 2 - 1) - 1 * (row != 0);
     info->is_watched = is_watched;
+
+    ecs_assert(info->row >= 0, ECS_INTERNAL_ERROR, NULL);
 }
 
 static
@@ -472,7 +474,7 @@ void run_component_actions(
         ecs_vector_t *systems;
         ecs_init_t init = NULL;
         ecs_init_t fini = NULL;
-        void *ctx = cdata->ctx;
+        void *ctx;
         
         if (is_init) {
             init = cdata->init;
@@ -480,12 +482,14 @@ void run_component_actions(
             if (!init && !systems) {
                 continue;
             }
+            ctx = cdata->ctx;
         } else {
             fini = cdata->fini;
             systems = cdata->on_remove;
             if (!fini && !systems) {
                 continue;
             }
+            ctx = cdata->ctx;
         }
 
         if (!type) {
@@ -560,8 +564,16 @@ uint32_t new_entity(
             world, stage, new_table, new_columns, new_row, 1, *added, true);
     }
 
-    if (new_table->on_new) {
+    ecs_vector_t *new_systems = new_table->on_new;
+    if (new_systems) {
+        int32_t i, count = ecs_vector_count(new_systems);
+        ecs_entity_t *sys_array = ecs_vector_first(new_systems);
 
+        for (i = 0; i < count; i ++) {
+            ecs_run_row_system(
+                world, sys_array[i], new_table->type, 
+                new_table, new_columns, new_row, 1);
+        }
     }
 
     return new_row;
@@ -940,13 +952,19 @@ void ecs_add_remove_intern(
 
     if (stage == &world->main_stage) {
         ecs_entity_t entity = info->entity;
+        ecs_record_t *r;
 
         bool is_new = false;
-        ecs_record_t *r = ecs_sparse_get_or_set_sparse(
-            world->entity_index, ecs_record_t, entity, &is_new);
-        if (is_new) {
-            r->table = NULL;
-            r->row = 0;
+
+        if (entity == ECS_SINGLETON) {
+            r = &world->singleton;
+        } else {
+            r = ecs_sparse_get_or_set_sparse(
+                world->entity_index, ecs_record_t, entity, &is_new);
+            if (is_new) {
+                r->table = NULL;
+                r->row = 0;
+            }
         }
 
         update_info(world, stage, entity, r, info);
@@ -1279,7 +1297,7 @@ uint32_t update_entity_index(
                     }
                 }
             }
-
+            
             /* Ensure that the last issued handle will always be ahead of the
              * entities created by this operation */
             if (e > world->last_handle) {

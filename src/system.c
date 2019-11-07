@@ -251,6 +251,41 @@ void ecs_run_task(
 
 /* -- Public API -- */
 
+static
+bool is_periodic(
+    ecs_system_kind_t kind)
+{
+    switch (kind) {
+    case EcsManual:
+    case EcsOnLoad:
+    case EcsPostLoad:
+    case EcsPreUpdate:
+    case EcsOnUpdate:
+    case EcsOnValidate:
+    case EcsPostUpdate:
+    case EcsPreStore:
+    case EcsOnStore:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static
+bool is_reactive(
+    ecs_system_kind_t kind)
+{
+    switch (kind) {
+    case EcsOnNew:
+    case EcsOnAdd:
+    case EcsOnRemove:
+    case EcsOnSet:
+        return true;
+    default:
+        return false;
+    }
+}
+
 ecs_entity_t ecs_new_system(
     ecs_world_t *world,
     const char *id,
@@ -258,23 +293,12 @@ ecs_entity_t ecs_new_system(
     ecs_signature_t *sig,
     ecs_system_action_t action)
 {
-    ecs_assert(kind == EcsManual ||
-               kind == EcsOnLoad ||
-               kind == EcsPostLoad ||
-               kind == EcsPreUpdate ||
-               kind == EcsOnUpdate ||
-               kind == EcsOnValidate ||
-               kind == EcsPostUpdate ||
-               kind == EcsPreStore ||
-               kind == EcsOnStore ||
-               kind == EcsOnAdd ||
-               kind == EcsOnRemove ||
-               kind == EcsOnSet,
+    ecs_assert(is_periodic(kind) || is_reactive(kind),
                ECS_INVALID_PARAMETER, NULL);
 
     bool needs_tables = ecs_needs_tables(world, sig);
 
-    ecs_assert(needs_tables || !((kind == EcsOnAdd) || (kind == EcsOnSet || (kind == EcsOnSet))),
+    ecs_assert(needs_tables || !is_reactive(kind),
         ECS_INVALID_PARAMETER, NULL);
 
     ecs_entity_t result = ecs_lookup(world, id);
@@ -282,16 +306,9 @@ ecs_entity_t ecs_new_system(
         return result;
     }
 
-    if (needs_tables && (kind == EcsOnLoad || kind == EcsPostLoad ||
-                         kind == EcsPreUpdate || kind == EcsOnUpdate ||
-                         kind == EcsOnValidate || kind == EcsPostUpdate ||
-                         kind == EcsPreStore || kind == EcsOnStore ||
-                         kind == EcsManual))
-    {
+    if (needs_tables && is_periodic(kind)) {
         result = ecs_col_system_new(world, id, kind, sig, action);
-    } else if (!needs_tables ||
-        (kind == EcsOnAdd || kind == EcsOnRemove || kind == EcsOnSet))
-    {
+    } else if (!needs_tables || is_reactive(kind)) {
         result = new_row_system(world, id, kind, needs_tables, sig, action);
     }
 
