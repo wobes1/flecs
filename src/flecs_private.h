@@ -352,7 +352,6 @@ void ecs_run_task(
 void ecs_run_row_system(
     ecs_world_t *world,
     ecs_entity_t system,
-    ecs_type_t type,
     ecs_table_t *table,
     ecs_column_t *table_columns,
     uint32_t offset,

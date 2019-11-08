@@ -126,7 +126,6 @@ void ecs_row_system_free(
 void ecs_run_row_system(
     ecs_world_t *world,
     ecs_entity_t system,
-    ecs_type_t type,
     ecs_table_t *table,
     ecs_column_t *table_columns,
     uint32_t offset,
@@ -164,6 +163,8 @@ void ecs_run_row_system(
         ecs_entity_t entity = 0;
 
         if (buffer[i].from == EcsFromSelf) {
+            ecs_type_t type = table->type;
+
             /* If a regular column, find corresponding column in table */
             columns[i] = ecs_type_index_of(type, buffer[i].is.component) + 1;
 
@@ -171,7 +172,7 @@ void ecs_run_row_system(
                 /* If column is not found, it could come from a prefab. Look for
                  * components of components */
                 entity = ecs_get_entity_for_component(
-                    world, 0, table->type, buffer[i].is.component);
+                    world, 0, type, buffer[i].is.component);
 
                 ecs_assert(entity != 0 || 
                     buffer[i].op == EcsOperOptional, 
@@ -245,7 +246,7 @@ void ecs_run_task(
     ecs_world_t *world,
     ecs_entity_t system)
 {
-    ecs_run_row_system(world, system, NULL, NULL, NULL, 0, 1);
+    ecs_run_row_system(world, system, NULL, NULL, 0, 1);
 }
 
 
