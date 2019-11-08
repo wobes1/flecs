@@ -25,32 +25,32 @@ ecs_entity_t ecs_col_system_new(
     system_data->base.kind = kind;
     system_data->query = ecs_new_query(world, sig);
 
-    system_data->column_params.element_size = sizeof(int32_t) * (count);
-    system_data->ref_params.element_size = sizeof(ecs_reference_t) * count;
-    system_data->component_params.element_size = sizeof(ecs_entity_t) * count;
+    system_data->column_size = sizeof(int32_t) * (count);
+    system_data->ref_size = sizeof(ecs_reference_t) * count;
+    system_data->component_size = sizeof(ecs_entity_t) * count;
     system_data->period = 0;
     system_data->entity = result;
 
     ecs_entity_t *elem = NULL;
 
     if (kind == EcsManual) {
-        elem = ecs_vector_add(&world->on_demand_systems, &handle_arr_params);
+        elem = ecs_vector_add(&world->on_demand_systems, ecs_entity_t);
     } else if (kind == EcsOnUpdate) {
-        elem = ecs_vector_add(&world->on_update_systems, &handle_arr_params);
+        elem = ecs_vector_add(&world->on_update_systems, ecs_entity_t);
     } else if (kind == EcsOnValidate) {
-        elem = ecs_vector_add(&world->on_validate_systems, &handle_arr_params);            
+        elem = ecs_vector_add(&world->on_validate_systems, ecs_entity_t);            
     } else if (kind == EcsPreUpdate) {
-        elem = ecs_vector_add(&world->pre_update_systems, &handle_arr_params);
+        elem = ecs_vector_add(&world->pre_update_systems, ecs_entity_t);
     } else if (kind == EcsPostUpdate) {
-        elem = ecs_vector_add(&world->post_update_systems, &handle_arr_params);
+        elem = ecs_vector_add(&world->post_update_systems, ecs_entity_t);
     } else if (kind == EcsOnLoad) {
-        elem = ecs_vector_add(&world->on_load_systems, &handle_arr_params);
+        elem = ecs_vector_add(&world->on_load_systems, ecs_entity_t);
     } else if (kind == EcsPostLoad) {
-        elem = ecs_vector_add(&world->post_load_systems, &handle_arr_params);            
+        elem = ecs_vector_add(&world->post_load_systems, ecs_entity_t);            
     } else if (kind == EcsPreStore) {
-        elem = ecs_vector_add(&world->pre_store_systems, &handle_arr_params);
+        elem = ecs_vector_add(&world->pre_store_systems, ecs_entity_t);
     } else if (kind == EcsOnStore) {
-        elem = ecs_vector_add(&world->on_store_systems, &handle_arr_params);
+        elem = ecs_vector_add(&world->on_store_systems, ecs_entity_t);
     }
 
     *elem = result;

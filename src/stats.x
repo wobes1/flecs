@@ -27,7 +27,7 @@ void calculate_type_stats(
     /*ecs_map_iter_t it = ecs_map_iter(world->main_stage.type_index);
     while (ecs_map_hasnext(&it)) {
         ecs_vector_t *type = ecs_map_next_ptr(&it);
-        ecs_vector_memory(type, &handle_arr_params, allocd, used);
+        ecs_vector_memory(type, ecs_entity_t, allocd, used);
     }*/
 }
 
@@ -89,7 +89,7 @@ void calculate_table_stats(
 
     for (i = 0; i < count; i ++) {
         ecs_table_t *table = ecs_sparse_get(tables, ecs_table_t, i);
-        ecs_vector_memory(table->frame_systems, &handle_arr_params, allocd, used);
+        ecs_vector_memory(table->frame_systems, ecs_entity_t, allocd, used);
         *allocd += ecs_vector_count(table->type) * sizeof(uint16_t);
         *used += ecs_vector_count(table->type) * sizeof(uint16_t);
     }
@@ -143,23 +143,23 @@ void get_memory_stats(
 {
     EcsMemoryStats *memory = &stats->memory;
 
-    ecs_vector_memory(world->add_systems, &handle_arr_params, &memory->systems.allocd, &memory->systems.used);
-    ecs_vector_memory(world->set_systems, &handle_arr_params, &memory->systems.allocd, &memory->systems.used);
-    ecs_vector_memory(world->remove_systems, &handle_arr_params, &memory->systems.allocd, &memory->systems.used);
+    ecs_vector_memory(world->add_systems, ecs_entity_t, &memory->systems.allocd, &memory->systems.used);
+    ecs_vector_memory(world->set_systems, ecs_entity_t, &memory->systems.allocd, &memory->systems.used);
+    ecs_vector_memory(world->remove_systems, ecs_entity_t, &memory->systems.allocd, &memory->systems.used);
     ecs_map_memory(world->type_sys_add_index, &memory->systems.allocd, &memory->systems.used);
     ecs_map_memory(world->type_sys_remove_index, &memory->systems.allocd, &memory->systems.used);
     ecs_map_memory(world->type_sys_set_index, &memory->systems.allocd, &memory->systems.used);
 
-    ecs_vector_memory(world->on_load_systems, &handle_arr_params, &memory->systems.allocd, &memory->systems.used);
-    ecs_vector_memory(world->post_load_systems, &handle_arr_params, &memory->systems.allocd, &memory->systems.used);
-    ecs_vector_memory(world->pre_update_systems, &handle_arr_params, &memory->systems.allocd, &memory->systems.used);
-    ecs_vector_memory(world->on_update_systems, &handle_arr_params, &memory->systems.allocd, &memory->systems.used);
-    ecs_vector_memory(world->on_validate_systems, &handle_arr_params, &memory->systems.allocd, &memory->systems.used);
-    ecs_vector_memory(world->post_update_systems, &handle_arr_params, &memory->systems.allocd, &memory->systems.used);
-    ecs_vector_memory(world->pre_store_systems, &handle_arr_params, &memory->systems.allocd, &memory->systems.used);
-    ecs_vector_memory(world->on_store_systems, &handle_arr_params, &memory->systems.allocd, &memory->systems.used);
-    ecs_vector_memory(world->inactive_systems, &handle_arr_params, &memory->systems.allocd, &memory->systems.used);
-    ecs_vector_memory(world->on_demand_systems, &handle_arr_params, &memory->systems.allocd, &memory->systems.used);
+    ecs_vector_memory(world->on_load_systems, ecs_entity_t, &memory->systems.allocd, &memory->systems.used);
+    ecs_vector_memory(world->post_load_systems, ecs_entity_t, &memory->systems.allocd, &memory->systems.used);
+    ecs_vector_memory(world->pre_update_systems, ecs_entity_t, &memory->systems.allocd, &memory->systems.used);
+    ecs_vector_memory(world->on_update_systems, ecs_entity_t, &memory->systems.allocd, &memory->systems.used);
+    ecs_vector_memory(world->on_validate_systems, ecs_entity_t, &memory->systems.allocd, &memory->systems.used);
+    ecs_vector_memory(world->post_update_systems, ecs_entity_t, &memory->systems.allocd, &memory->systems.used);
+    ecs_vector_memory(world->pre_store_systems, ecs_entity_t, &memory->systems.allocd, &memory->systems.used);
+    ecs_vector_memory(world->on_store_systems, ecs_entity_t, &memory->systems.allocd, &memory->systems.used);
+    ecs_vector_memory(world->inactive_systems, ecs_entity_t, &memory->systems.allocd, &memory->systems.used);
+    ecs_vector_memory(world->on_demand_systems, ecs_entity_t, &memory->systems.allocd, &memory->systems.used);
 
     calculate_systems_stats(world, world->on_load_systems, &memory->systems.allocd, &memory->systems.used);
     calculate_systems_stats(world, world->post_load_systems, &memory->systems.allocd, &memory->systems.used);

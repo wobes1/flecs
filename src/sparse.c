@@ -21,18 +21,13 @@ struct ecs_sparse_t {
     uint32_t chunk_size;        /* Chunk size */
 };
 
-static ecs_vector_params_t free_param = {.element_size = sizeof(uint32_t)};
-static ecs_vector_params_t dense_param = {.element_size = sizeof(uint32_t)};
-static ecs_vector_params_t sparse_param = {.element_size = sizeof(sparse_elem_t)};
-static ecs_vector_params_t chunk_param = {.element_size = sizeof(chunk_t)};
-
 static
 void add_chunk(
     ecs_sparse_t *sparse)
 {
     /* Add chunk to sparse instance */
     uint32_t chunk_count = ecs_vector_count(sparse->chunks);
-    chunk_t *chunk = ecs_vector_add(&sparse->chunks, &chunk_param);
+    chunk_t *chunk = ecs_vector_add(&sparse->chunks, chunk_t);
     uint32_t chunk_size = sparse->chunk_size;
     uint32_t element_size = sparse->element_size;
 
@@ -43,8 +38,7 @@ void add_chunk(
     /* Create room in sparse array for chunk */
     uint32_t prev_total = chunk_count * chunk_size;
 
-    ecs_vector_set_count(&sparse->sparse, &sparse_param, 
-        prev_total + chunk_size);
+    ecs_vector_set_count(&sparse->sparse, sparse_elem_t, prev_total + chunk_size);
 
     ecs_assert(sparse->sparse != NULL, ECS_INTERNAL_ERROR, NULL);
 
@@ -65,7 +59,7 @@ static
 chunk_t* last_chunk(
     const ecs_sparse_t *sparse)
 {
-    return ecs_vector_last(sparse->chunks, &chunk_param);
+    return ecs_vector_last(sparse->chunks, chunk_t);
 }
 
 static
@@ -75,7 +69,7 @@ void* add_sparse(
 {
     sparse_elem_t *sparse_arr = ecs_vector_first(sparse->sparse);
     sparse_arr[index].dense = ecs_vector_count(sparse->dense);
-    uint32_t *dense = ecs_vector_add(&sparse->dense, &dense_param);
+    uint32_t *dense = ecs_vector_add(&sparse->dense, uint32_t);
     *dense = index;
 
     return sparse_arr[index].ptr;
@@ -134,7 +128,7 @@ void* get_or_set_sparse(
 
     if (dense >= dense_count || dense_array[dense] != index) {
         ecs_assert(index < ecs_vector_count(sparse->sparse), ECS_INVALID_PARAMETER, NULL);
-        ecs_vector_add(&sparse->dense, &dense_param);
+        ecs_vector_add(&sparse->dense, uint32_t);
 
         dense_array = ecs_vector_first(sparse->dense);
         sparse_arr[index].dense = dense_count;
@@ -207,7 +201,7 @@ void* _ecs_sparse_add(
 
     uint32_t index = 0;
     
-    if (!ecs_vector_pop(sparse->free_stack, &free_param, &index)) {
+    if (!ecs_vector_pop(sparse->free_stack, &index)) {
         chunk_t *chunk = last_chunk(sparse);
 
         uint32_t elements_per_chunk = sparse->chunk_size;
@@ -236,7 +230,7 @@ void* _ecs_sparse_remove(
     ecs_assert(!element_size || element_size == sparse->element_size, 
         ECS_INVALID_PARAMETER, NULL);
 
-    uint32_t *free_elem = ecs_vector_add(&sparse->free_stack, &free_param);
+    uint32_t *free_elem = ecs_vector_add(&sparse->free_stack, uint32_t);
     *free_elem = index;
 
     return get_sparse(sparse, index, true);
@@ -315,10 +309,10 @@ void ecs_sparse_memory(
         return;
     }
 
-    ecs_vector_memory(sparse->chunks, &chunk_param, allocd, used);
-    ecs_vector_memory(sparse->dense, &dense_param, allocd, used);
-    ecs_vector_memory(sparse->sparse, &sparse_param, allocd, used);
-    ecs_vector_memory(sparse->free_stack, &free_param, allocd, used);
+    ecs_vector_memory(sparse->chunks, chunk_t, allocd, used);
+    ecs_vector_memory(sparse->dense, uint32_t, allocd, used);
+    ecs_vector_memory(sparse->sparse, sparse_elem_t, allocd, used);
+    ecs_vector_memory(sparse->free_stack, uint32_t, allocd, used);
 
     uint32_t data_total = sparse->chunk_size * 
         sparse->element_size * ecs_vector_count(sparse->chunks);
@@ -343,7 +337,7 @@ void ecs_sparse_set_size(
     int32_t to_add = size - current;
 
     if (to_add > 0) {
-        ecs_vector_set_size(&sparse->dense, &dense_param, size);
+        ecs_vector_set_size(&sparse->dense, uint32_t, size);
 
         while (ecs_sparse_size(sparse) < size) {
             add_chunk(sparse);

@@ -268,13 +268,11 @@ If memory is tied to the lifecycle of a component, applications can use `OnAdd` 
 ```c
 typedef ecs_vector_t *DynamicBuffer;
 
-ecs_vector_params_t params = {.element_size = sizeof(int)};
-
 void InitDynamicBuffer(ecs_rows_t *rows) {
     ECS_COLUMN(rows, DynamicBuffer, data, 1);
     
     for (int i = rows->begin; i < rows->end; i ++) {
-        data[i] = ecs_vector_new(&params, 0);
+        data[i] = ecs_vector_new(int, 0);
     }
 }
 

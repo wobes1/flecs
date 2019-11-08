@@ -76,7 +76,7 @@ uint32_t ecs_columns_insert(
     uint32_t column_count = ecs_vector_count(table->type);
 
     /* Fist add entity to column with entity ids */
-    ecs_entity_t *e = ecs_vector_add(&columns[0].data, &handle_arr_params);
+    ecs_entity_t *e = ecs_vector_add(&columns[0].data, ecs_entity_t);
     ecs_assert(e != NULL, ECS_INTERNAL_ERROR, NULL);
 
     *e = entity;
@@ -88,10 +88,9 @@ uint32_t ecs_columns_insert(
     for (i = 1; i < column_count + 1; i ++) {
         uint32_t size = columns[i].size;
         if (size) {
-            ecs_vector_params_t params = {.element_size = size};
             void *old_vector = columns[i].data;
 
-            ecs_vector_add(&columns[i].data, &params);
+            _ecs_vector_add(&columns[i].data, size);
             
             if (old_vector != columns[i].data) {
                 reallocd = true;
@@ -137,8 +136,8 @@ void ecs_columns_delete(
 
         for (i = 1; i < column_last; i ++) {
             if (columns[i].size) {
-                ecs_vector_params_t params = {.element_size = columns[i].size};
-                ecs_vector_remove_index(columns[i].data, &params, index);
+                _ecs_vector_remove_index(
+                    columns[i].data, columns[i].size, index);
             }
         }
 
@@ -173,7 +172,7 @@ uint32_t ecs_columns_grow(
     uint32_t column_count = ecs_vector_count(table->type);
 
     /* Fist add entity to column with entity ids */
-    ecs_entity_t *e = ecs_vector_addn(&columns[0].data, &handle_arr_params, count);
+    ecs_entity_t *e = ecs_vector_addn(&columns[0].data, ecs_entity_t, count);
     ecs_assert(e != NULL, ECS_INTERNAL_ERROR, NULL);
 
     uint32_t i;
@@ -185,13 +184,14 @@ uint32_t ecs_columns_grow(
 
     /* Add elements to each column array */
     for (i = 1; i < column_count + 1; i ++) {
-        ecs_vector_params_t params = {.element_size = columns[i].size};
-        if (!params.element_size) {
+        uint32_t size = columns[i].size;
+        if (!size) {
             continue;
         }
+        
         void *old_vector = columns[i].data;
 
-        ecs_vector_addn(&columns[i].data, &params, count);
+        _ecs_vector_addn(&columns[i].data, size, count);
 
         if (old_vector != columns[i].data) {
             reallocd = true;
@@ -221,14 +221,14 @@ int16_t ecs_columns_set_size(
     }
 
     uint32_t size = ecs_vector_set_size(
-        &columns[0].data, &handle_arr_params, count);
+        &columns[0].data, ecs_entity_t, count);
     ecs_assert(size != 0, ECS_INTERNAL_ERROR, NULL);
     (void)size;
 
     uint32_t i;
     for (i = 1; i < column_count + 1; i ++) {
-        ecs_vector_params_t params = {.element_size = columns[i].size};
-        uint32_t size = ecs_vector_set_size(&columns[i].data, &params, count);
+        uint32_t size = _ecs_vector_set_size(
+            &columns[i].data, columns[i].size, count);
         ecs_assert(size != 0, ECS_INTERNAL_ERROR, NULL);
         (void)size;
     }
@@ -443,8 +443,7 @@ void ecs_columns_merge(
                 ecs_vector_t *dst = new_columns[i_new].data;
                 ecs_vector_t *src = old_columns[i_old].data;
 
-                ecs_vector_params_t params = {.element_size = size};
-                ecs_vector_set_count(&dst, &params, new_count + old_count);
+                _ecs_vector_set_count(&dst, size, new_count + old_count);
                 
                 void *dst_ptr = ecs_vector_first(dst);
                 void *src_ptr = ecs_vector_first(src);

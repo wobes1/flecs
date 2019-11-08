@@ -287,7 +287,6 @@ int ecs_new_signature_action(
     void *data)
 {
     ecs_signature_t *sig = data;
-    ecs_signature_column_t *elem;
 
     /* Lookup component handly by string identifier */
     ecs_entity_t component = ecs_lookup(world, component_id);
@@ -309,11 +308,13 @@ int ecs_new_signature_action(
         return ECS_INVALID_SIGNATURE;
     }
 
+    ecs_signature_column_t *elem;
+
     /* AND (default) and optional columns are stored the same way */
     if (op == EcsOperAnd || op == EcsOperOptional) {
-        elem = ecs_vector_add(&sig->columns, &system_column_params);
+        elem = ecs_vector_add(&sig->columns, ecs_signature_column_t);
         elem->from = from;
-        elem->op = op;
+        elem->op = op;          
         elem->is.component = component;
 
         if (from == EcsFromEntity) {
@@ -327,7 +328,7 @@ int ecs_new_signature_action(
 
     /* OR columns store a type id instead of a single component */
     } else if (op == EcsOperOr) {
-        elem = ecs_vector_last(sig->columns, &system_column_params);
+        elem = ecs_vector_last(sig->columns, ecs_signature_column_t);
         if (elem->op == EcsOperAnd) {
             elem->is.type = ecs_type_add_intern(
                 world, NULL, 0, elem->is.component);
@@ -338,24 +339,23 @@ int ecs_new_signature_action(
             }
         }
 
+        elem->from = from;
+        elem->op = op;  
         elem->is.type = ecs_type_add_intern(
             world, NULL, elem->is.type, component);
-        elem->from = from;
-        elem->op = EcsOperOr;
 
     /* A system stores two NOT familes; one for entities and one for components.
      * These can be quickly & efficiently used to exclude tables with
      * ecs_type_contains. */
     } else if (op == EcsOperNot) {
-        elem = ecs_vector_add(&sig->columns, &system_column_params);
-        elem->from = EcsFromEmpty; /* Just pass handle to system */
-        elem->op = EcsOperNot;
+        elem = ecs_vector_add(&sig->columns, ecs_signature_column_t);
         elem->is.component = component;
-
+        elem->from = EcsFromEmpty;
+        elem->op = op;  
     } else if (from == EcsFromEntity) {
-        elem = ecs_vector_add(&sig->columns, &system_column_params);
-        elem->from = EcsFromEntity;
-        elem->op = ecs_lookup(world, source_id);
+        elem = ecs_vector_add(&sig->columns, ecs_signature_column_t);
+        elem->from = from;
+        elem->source = ecs_lookup(world, source_id);
         elem->is.component = component;
     }
 

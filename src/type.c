@@ -1,9 +1,5 @@
 #include "flecs_private.h"
 
-const ecs_vector_params_t char_arr_params = {
-    .element_size = sizeof(char)
-};
-
 /** Parse callback that adds type to type identifier for ecs_new_type */
 static
 int parse_type_action(
@@ -38,10 +34,10 @@ int parse_type_action(
         }
 
         if (oper_kind == EcsOperAnd) {
-            ecs_entity_t* e_ptr = ecs_vector_add(array, &handle_arr_params);
+            ecs_entity_t* e_ptr = ecs_vector_add(array, ecs_entity_t);
             *e_ptr = entity;
         } else if (oper_kind == EcsOperOr) {
-            ecs_entity_t *e_ptr = ecs_vector_last(*array, &handle_arr_params);
+            ecs_entity_t *e_ptr = ecs_vector_last(*array, ecs_entity_t);
 
             /* If using an OR operator, the array should at least have one 
              * element. */
@@ -391,7 +387,7 @@ EcsTypeComponent type_from_expr(
     ecs_world_t *world,
     const char *expr)
 {
-    ecs_vector_t *vec = ecs_vector_new(&handle_arr_params, 1);
+    ecs_vector_t *vec = ecs_vector_new(ecs_entity_t, 1);
     ecs_parse_component_expr(world, expr, parse_type_action, &vec);
     EcsTypeComponent result = type_from_vec(world, vec);
     ecs_vector_free(vec);
@@ -578,7 +574,7 @@ char* ecs_type_to_expr(
     ecs_world_t *world,
     ecs_type_t type)
 {
-    ecs_vector_t *chbuf = ecs_vector_new(&char_arr_params, 32);
+    ecs_vector_t *chbuf = ecs_vector_new(char, 32);
     char *dst;
     uint32_t len;
     char buf[15];
@@ -591,18 +587,18 @@ char* ecs_type_to_expr(
         ecs_entity_t flags = split_entity_id(handles[i], &h) & ECS_ENTITY_FLAGS_MASK;
 
         if (i) {
-            *(char*)ecs_vector_add(&chbuf, &char_arr_params) = ',';
+            *ecs_vector_add(&chbuf, char) = ',';
         }
 
         if (flags & ECS_INSTANCEOF) {
             int len = sizeof("INSTANCEOF|") - 1;
-            dst = ecs_vector_addn(&chbuf, &char_arr_params, len);
+            dst = ecs_vector_addn(&chbuf, char, len);
             memcpy(dst, "INSTANCEOF|", len);
         }
 
         if (flags & ECS_CHILDOF) {
             int len = sizeof("CHILDOF|") - 1;
-            dst = ecs_vector_addn(&chbuf, &char_arr_params, len);
+            dst = ecs_vector_addn(&chbuf, char, len);
             memcpy(dst, "CHILDOF|", len);
         }
 
@@ -616,11 +612,11 @@ char* ecs_type_to_expr(
             str = buf;
         }
         len = strlen(str);
-        dst = ecs_vector_addn(&chbuf, &char_arr_params, len);
+        dst = ecs_vector_addn(&chbuf, char, len);
         memcpy(dst, str, len);
     }
 
-    *(char*)ecs_vector_add(&chbuf, &char_arr_params) = '\0';
+    *ecs_vector_add(&chbuf, char) = '\0';
 
     char *result = strdup(ecs_vector_first(chbuf));
     ecs_vector_free(chbuf);

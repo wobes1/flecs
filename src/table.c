@@ -19,7 +19,7 @@ ecs_type_t entities_to_type(
 {
     if (entities->count) {
         ecs_vector_t *result = NULL;
-        ecs_vector_set_count(&result, &handle_arr_params, entities->count);
+        ecs_vector_set_count(&result, ecs_entity_t, entities->count);
         ecs_entity_t *array = ecs_vector_first(result);
         memcpy(array, entities->array, sizeof(ecs_entity_t) * entities->count);
         return result;

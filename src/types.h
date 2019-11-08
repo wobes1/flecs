@@ -292,9 +292,9 @@ typedef struct EcsColSystem {
     ecs_entity_t entity;                  /* Entity id of system, used for ordering */
     ecs_query_t *query;                   /* System query */
     ecs_vector_t *jobs;                   /* Jobs for this system */
-    ecs_vector_params_t column_params;    /* Parameters for type_columns */
-    ecs_vector_params_t component_params; /* Parameters for components */
-    ecs_vector_params_t ref_params;       /* Parameters for refs */
+    uint32_t column_size;                 /* Parameters for type_columns */
+    uint32_t component_size;              /* Parameters for components */
+    uint32_t ref_size;                    /* Parameters for refs */
     float period;                         /* Minimum period inbetween system invocations */
     float time_passed;                    /* Time passed since last invocation */
 } EcsColSystem;
@@ -513,19 +513,5 @@ struct ecs_world {
     bool should_match;            /* Should table be rematched */
     bool should_resolve;          /* If a table reallocd, resolve system refs */
 }; 
-
-
-/* Parameters for various array types */
-extern const ecs_vector_params_t handle_arr_params;
-extern const ecs_vector_params_t stage_arr_params;
-extern const ecs_vector_params_t table_arr_params;
-extern const ecs_vector_params_t thread_arr_params;
-extern const ecs_vector_params_t job_arr_params;
-extern const ecs_vector_params_t builder_params;
-extern const ecs_vector_params_t system_column_params;
-extern const ecs_vector_params_t matched_table_params;
-extern const ecs_vector_params_t matched_column_params;
-extern const ecs_vector_params_t reference_params;
-extern const ecs_vector_params_t type_params;
 
 #endif

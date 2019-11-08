@@ -1,32 +1,5 @@
 #include "flecs_private.h"
 
-/* -- Global array parameters -- */
-
-const ecs_vector_params_t table_arr_params = {
-    .element_size = sizeof(ecs_table_t)
-};
-
-const ecs_vector_params_t handle_arr_params = {
-    .element_size = sizeof(ecs_entity_t)
-};
-
-const ecs_vector_params_t type_data_params = {
-    .element_size = sizeof(ecs_type_t)
-};
-
-const ecs_vector_params_t stage_arr_params = {
-    .element_size = sizeof(ecs_stage_t)
-};
-
-const ecs_vector_params_t builder_params = {
-    .element_size = sizeof(ecs_builder_op_t)
-};
-
-const ecs_vector_params_t component_data_params = {
-    .element_size = sizeof(ecs_component_data_t)
-};
-
-
 /* -- Global variables -- */
 
 ecs_type_t TEcsComponent;
@@ -222,7 +195,7 @@ void add_prefab_child_to_builder(
     if (!builder) {
         ecs_add(world, prefab, EcsPrefabBuilder);
         builder = ecs_get_ptr(world, prefab, EcsPrefabBuilder);
-        builder->ops = ecs_vector_new(&builder_params, 1);
+        builder->ops = ecs_vector_new(ecs_builder_op_t, 1);
     }
 
     ecs_type_t type = NULL;
@@ -247,7 +220,7 @@ void add_prefab_child_to_builder(
 
     /* If there are no child ops, this is the first time that this child is
      * added to this parent prefab. Simply add it to the vector */
-    ecs_builder_op_t *op = ecs_vector_add(&builder->ops, &builder_params);
+    ecs_builder_op_t *op = ecs_vector_add(&builder->ops, ecs_builder_op_t);
     op->id = ecs_get_id(world, child);
     op->type = type;
 }
@@ -369,27 +342,27 @@ ecs_world_t *ecs_init(void) {
 
     world->component_data = NULL;
     ecs_vector_set_count(
-        &world->component_data, &component_data_params, ECS_MAX_COMPONENTS);
+        &world->component_data, ecs_component_data_t, ECS_MAX_COMPONENTS);
     ecs_component_data_t *cdata_array = ecs_vector_first(world->component_data);
     memset(cdata_array, 0, sizeof(ecs_component_data_t) * ECS_MAX_COMPONENTS);
     
-    world->on_update_systems = ecs_vector_new(&handle_arr_params, 0);
-    world->on_validate_systems = ecs_vector_new(&handle_arr_params, 0);
-    world->pre_update_systems = ecs_vector_new(&handle_arr_params, 0);
-    world->post_update_systems = ecs_vector_new(&handle_arr_params, 0);
-    world->post_load_systems = ecs_vector_new(&handle_arr_params, 0);
-    world->on_load_systems = ecs_vector_new(&handle_arr_params, 0);
-    world->pre_store_systems = ecs_vector_new( &handle_arr_params, 0);
-    world->on_store_systems = ecs_vector_new( &handle_arr_params, 0);
-    world->inactive_systems = ecs_vector_new(&handle_arr_params, 0);
-    world->on_demand_systems = ecs_vector_new(&handle_arr_params, 0);
+    world->on_update_systems = ecs_vector_new(ecs_entity_t, 0);
+    world->on_validate_systems = ecs_vector_new(ecs_entity_t, 0);
+    world->pre_update_systems = ecs_vector_new(ecs_entity_t, 0);
+    world->post_update_systems = ecs_vector_new(ecs_entity_t, 0);
+    world->post_load_systems = ecs_vector_new(ecs_entity_t, 0);
+    world->on_load_systems = ecs_vector_new(ecs_entity_t, 0);
+    world->pre_store_systems = ecs_vector_new( ecs_entity_t, 0);
+    world->on_store_systems = ecs_vector_new( ecs_entity_t, 0);
+    world->inactive_systems = ecs_vector_new(ecs_entity_t, 0);
+    world->on_demand_systems = ecs_vector_new(ecs_entity_t, 0);
 
     world->queries = ecs_sparse_new(ecs_query_t, 0);
     world->container_filter_map = ecs_os_calloc(sizeof(uint8_t), ECS_MAX_COMPONENTS);
     world->container_filter_count = 0;
 
-    world->tasks = ecs_vector_new(&handle_arr_params, 0);
-    world->fini_tasks = ecs_vector_new(&handle_arr_params, 0);
+    world->tasks = ecs_vector_new(ecs_entity_t, 0);
+    world->fini_tasks = ecs_vector_new(ecs_entity_t, 0);
 
     world->type_handles = ecs_map_new(ecs_entity_t, 0);
     world->prefab_parent_index = ecs_map_new(ecs_entity_t, 0);
@@ -675,7 +648,7 @@ ecs_entity_t ecs_lookup_child_in_columns(
     for (i = 0; i < count; i ++) {
         if (!strcmp(buffer[i], id)) {
             return *(ecs_entity_t*)ecs_vector_get(
-                columns[0].data, &handle_arr_params, i);
+                columns[0].data, ecs_entity_t, i);
         }
     }
 
@@ -1230,7 +1203,7 @@ void _ecs_set_component_callbacks(
 {
     if (ecs_vector_count(world->component_data) < component) {
         ecs_vector_set_size(&world->component_data, 
-            &component_data_params, component + 1);
+            ecs_component_data_t, component + 1);
     }
 
     ecs_component_data_t *data = ecs_vector_first(world->component_data);

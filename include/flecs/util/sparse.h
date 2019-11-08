@@ -17,82 +17,82 @@ ecs_sparse_t* _ecs_sparse_new(
 
 FLECS_EXPORT
 void ecs_sparse_free(
-    ecs_sparse_t *chunked);
+    ecs_sparse_t *sparse);
 
 FLECS_EXPORT
 void ecs_sparse_clear(
-    ecs_sparse_t *chunked);
+    ecs_sparse_t *sparse);
 
 FLECS_EXPORT
 void* _ecs_sparse_add(
-    ecs_sparse_t *chunked,
+    ecs_sparse_t *sparse,
     uint32_t size);
 
-#define ecs_sparse_add(chunked, type)\
-    ((type*)_ecs_sparse_add(chunked, sizeof(type)))
+#define ecs_sparse_add(sparse, type)\
+    ((type*)_ecs_sparse_add(sparse, sizeof(type)))
 
 FLECS_EXPORT
 void* _ecs_sparse_remove(
-    ecs_sparse_t *chunked,
+    ecs_sparse_t *sparse,
     uint32_t size,
     uint32_t index);
 
-#define ecs_sparse_remove(chunked, type, index)\
-    ((type*)_ecs_sparse_remove(chunked, sizeof(type), index))
+#define ecs_sparse_remove(sparse, type, index)\
+    ((type*)_ecs_sparse_remove(sparse, sizeof(type), index))
 
 FLECS_EXPORT
 void* _ecs_sparse_get(
-    const ecs_sparse_t *chunked,
+    const ecs_sparse_t *sparse,
     uint32_t size,
     uint32_t index);
 
-#define ecs_sparse_get(chunked, type, index)\
-    ((type*)_ecs_sparse_get(chunked, sizeof(type), index))
+#define ecs_sparse_get(sparse, type, index)\
+    ((type*)_ecs_sparse_get(sparse, sizeof(type), index))
 
 FLECS_EXPORT
 uint32_t ecs_sparse_count(
-    const ecs_sparse_t *chunked);
+    const ecs_sparse_t *sparse);
 
 FLECS_EXPORT
 uint32_t ecs_sparse_size(
-    const ecs_sparse_t *chunked);
+    const ecs_sparse_t *sparse);
 
 FLECS_EXPORT
 void* _ecs_sparse_get_sparse(
-    const ecs_sparse_t *chunked,
+    const ecs_sparse_t *sparse,
     uint32_t size,
     uint32_t index);
 
-#define ecs_sparse_get_sparse(chunked, type, index)\
-    ((type*)_ecs_sparse_get_sparse(chunked, sizeof(type), index))
+#define ecs_sparse_get_sparse(sparse, type, index)\
+    ((type*)_ecs_sparse_get_sparse(sparse, sizeof(type), index))
 
 FLECS_EXPORT
 void* _ecs_sparse_get_or_set_sparse(
-    ecs_sparse_t *chunked,
+    ecs_sparse_t *sparse,
     uint32_t element_size,
     uint32_t index,
     bool *is_new);
 
-#define ecs_sparse_get_or_set_sparse(chunked, type, index, is_new)\
-    ((type*)_ecs_sparse_get_or_set_sparse(chunked, sizeof(type), index, is_new))
+#define ecs_sparse_get_or_set_sparse(sparse, type, index, is_new)\
+    ((type*)_ecs_sparse_get_or_set_sparse(sparse, sizeof(type), index, is_new))
 
 FLECS_EXPORT
 const uint32_t* ecs_sparse_indices(
-    const ecs_sparse_t *chunked);
+    const ecs_sparse_t *sparse);
 
 FLECS_EXPORT
 void ecs_sparse_set_size(
-    ecs_sparse_t *chunked,
+    ecs_sparse_t *sparse,
     uint32_t size);
 
 FLECS_EXPORT
 void ecs_sparse_grow(
-    ecs_sparse_t *chunked,
+    ecs_sparse_t *sparse,
     uint32_t count);
 
 FLECS_EXPORT
 void ecs_sparse_memory(
-    ecs_sparse_t *chunked,
+    ecs_sparse_t *sparse,
     uint32_t *allocd,
     uint32_t *used);
 

@@ -13,17 +13,17 @@ void copy_column(
     uint32_t size = new_column->size;
 
     if (size) {
-        ecs_vector_params_t param = {.element_size = new_column->size};
+        uint32_t size = new_column->size;
 
         if (old_index < 0) old_index *= -1;
         
-        void *dst = ecs_vector_get(new_column->data, &param, new_index);
-        void *src = ecs_vector_get(old_column->data, &param, old_index);
+        void *dst = _ecs_vector_get(new_column->data, size, new_index);
+        void *src = _ecs_vector_get(old_column->data, size, old_index);
             
         ecs_assert(dst != NULL, ECS_INTERNAL_ERROR, NULL);
         ecs_assert(src != NULL, ECS_INTERNAL_ERROR, NULL);
 
-        memcpy(dst, src, param.element_size);
+        memcpy(dst, src, size);
     }
 }
 
@@ -294,7 +294,7 @@ ecs_type_t instantiate_prefab(
 
         uint32_t count = ecs_vector_count(builder->ops);
         void *new_ops = ecs_vector_addn(
-            &entity_builder->ops, &builder_params, count);
+            &entity_builder->ops, ecs_builder_op_t, count);
         
         memcpy(new_ops, ecs_vector_first(builder->ops), 
             sizeof(ecs_builder_op_t) * count);
@@ -2214,8 +2214,7 @@ ecs_type_t ecs_type_from_entity(
     }
 
     if (component == EEcsTypeComponent) {
-        ecs_vector_params_t params = {.element_size = sizeof(EcsTypeComponent)};
-        EcsTypeComponent *fe = ecs_vector_get(columns[1].data, &params, index);
+        EcsTypeComponent *fe = ecs_vector_get(columns[1].data, EcsTypeComponent, index);
         type = fe->normalized;
     } else {
         ecs_table_t *table = ecs_table_find_or_create(world, NULL, 

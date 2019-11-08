@@ -1,18 +1,6 @@
 
 #include "flecs_private.h"
 
-const ecs_vector_params_t matched_table_params = {
-    .element_size = sizeof(ecs_matched_table_t)
-};
-
-const ecs_vector_params_t system_column_params = {
-    .element_size = sizeof(ecs_signature_column_t)
-};
-
-const ecs_vector_params_t reference_params = {
-    .element_size = sizeof(ecs_reference_t)
-};
-
 static
 ecs_entity_t components_contains(
     ecs_world_t *world,
@@ -92,7 +80,7 @@ void add_table(
     /* Initially always add table to inactive group. If the system is registered
      * with the table and the table is not empty, the table will send an
      * activate signal to the system. */
-    table_data = ecs_vector_add(&query->tables, &matched_table_params);
+    table_data = ecs_vector_add(&query->tables, ecs_matched_table_t);
     table_data->table = table;
     table_data->references = NULL;
 
@@ -231,7 +219,7 @@ void add_table(
                 if (component_data->size) {
                     ecs_entity_t e;
                     ecs_reference_t *ref = ecs_vector_add(
-                            &table_data->references, &reference_params);
+                            &table_data->references, ecs_reference_t);
 
                     /* Find the entity for the component */
                     if (from == EcsFromEntity) {

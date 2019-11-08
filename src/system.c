@@ -13,9 +13,9 @@ void register_system(
 
     if (!needs_tables) {
         if (kind == EcsOnUpdate) {
-            elem = ecs_vector_add(&world->tasks, &handle_arr_params);
+            elem = ecs_vector_add(&world->tasks, ecs_entity_t);
         } else if (kind == EcsOnRemove) {
-            elem = ecs_vector_add(&world->fini_tasks, &handle_arr_params);
+            elem = ecs_vector_add(&world->fini_tasks, ecs_entity_t);
         }
     } else if (kind == EcsOnNew) {
         ecs_entity_array_t components = {
@@ -27,7 +27,7 @@ void register_system(
                 world, &world->main_stage, &components);
         ecs_assert(table != NULL, ECS_INTERNAL_ERROR, NULL);      
 
-        elem = ecs_vector_add(&table->on_new, &handle_arr_params);  
+        elem = ecs_vector_add(&table->on_new, ecs_entity_t);  
     } else {
         ecs_assert(
             ecs_vector_count(system_data->components) == 1, 
@@ -40,13 +40,13 @@ void register_system(
 
         switch (kind) {       
         case EcsOnAdd:
-            elem = ecs_vector_add(&cdata[c].on_add, &handle_arr_params);
+            elem = ecs_vector_add(&cdata[c].on_add, ecs_entity_t);
             break;
         case EcsOnRemove:
-            elem = ecs_vector_add(&cdata[c].on_remove, &handle_arr_params);
+            elem = ecs_vector_add(&cdata[c].on_remove, ecs_entity_t);
             break;
         case EcsOnSet:
-            elem = ecs_vector_add(&cdata[c].on_set, &handle_arr_params);
+            elem = ecs_vector_add(&cdata[c].on_set, ecs_entity_t);
             break; 
         default:
             ecs_abort(ECS_INTERNAL_ERROR, NULL);
@@ -86,7 +86,7 @@ ecs_entity_t new_row_system(
     system_data->sig = *sig;
     system_data->base.enabled = true;
     system_data->base.kind = kind;
-    system_data->components = ecs_vector_new(&handle_arr_params, count);
+    system_data->components = ecs_vector_new(ecs_entity_t, count);
 
     ecs_type_t type_id = 0;
     uint32_t i, column_count = ecs_vector_count(system_data->sig.columns);
@@ -94,7 +94,7 @@ ecs_entity_t new_row_system(
 
     for (i = 0; i < column_count; i ++) {
         ecs_entity_t *h = ecs_vector_add(
-            &system_data->components, &handle_arr_params);
+            &system_data->components, ecs_entity_t);
 
         ecs_signature_column_t *column = &buffer[i];
         *h = column->is.component;
