@@ -142,8 +142,7 @@ void ecs_run_row_system(
         return;
     }
 
-    if (table && table->flags & EcsTableIsPrefab && 
-        !system_data->sig.match_prefab) 
+    if (table && table->is_prefab && !system_data->sig.match_prefab) 
     {
         return;
     }
@@ -589,7 +588,7 @@ void* ecs_table_column(
     uint32_t column)
 {
     ecs_table_t *table = rows->table;
-    return ecs_vector_first(table->columns[column + 1].data);
+    return ecs_vector_first(table->columns[0][column + 1].data);
 }
 
 static

@@ -39,6 +39,8 @@
 #define ECS_SYSTEM_INITIAL_TABLE_COUNT (0)
 #define ECS_MAX_JOBS_PER_WORKER (16)
 #define ECS_MAX_COMPONENTS (1024)
+#define ECS_MAX_THREADS (16)
+#define ECS_MAX_STAGES (ECS_MAX_THREADS + 2)
 
 /* This is _not_ the max number of entities that can be of a given type. This 
  * constant defines the maximum number of components, prefabs and parents can be
@@ -95,6 +97,8 @@ typedef struct EcsPrefabBuilder {
 /* -- Entity storage -- */
 
 #define EcsTableIsPrefab (1)
+#define EcsTableHasBase (2)
+#define EcsTableHasParent (4)
 
 typedef struct ecs_table_t ecs_table_t;
 
@@ -121,7 +125,8 @@ typedef struct ecs_edge_t {
 struct ecs_table_t {
     ecs_type_t type;              /* Type containing component ids */
     
-    ecs_column_t *columns;        /* Columns storing component data */
+    ecs_column_t *columns[ECS_MAX_STAGES]; /* Columns/stage with component data */
+
     ecs_columns_t *child_columns; /* Columns used to store child entities. The
                                    * index in the column is a bitset derived
                                    * from the parent components, mapped through
@@ -135,7 +140,9 @@ struct ecs_table_t {
     ecs_edge_t parent_edge;       /* Edge to tables with CHILDOF columns */
     ecs_map_t *hi_edges;          /* Edges to high entity ids (>= MAX_COMPONENT) */
 
-    uint32_t flags;               /* Flags for testing table properties */
+    bool has_base;
+    bool has_parent;
+    bool is_prefab;
 };
 
 /* A record contains the table and row at which the entity is stored. */
@@ -318,19 +325,15 @@ typedef struct EcsRowSystem {
  * iterating. Additionally, worker threads have their own stage that lets them
  * mutate the state of entities without requiring locks. */
 typedef struct ecs_stage_t {
-    /* If this is not main stage, 
-     * changes to the entity index 
-     * are buffered here */
     ecs_map_t *entity_index;       /* Entity lookup table for (table, row) */
 
-    /* These occur only in
-     * temporary stages, and
-     * not on the main stage */
-    ecs_map_t *data_stage;         /* Arrays with staged component values */
-    ecs_map_t *remove_merge;       /* All removed components before merge */
-    
-    /* Is entity range checking enabled? */
-    bool range_check_enabled;
+    ecs_table_t table_root;        /* Root to table graph */
+    ecs_sparse_t *tables;          /* Iterable storage for tables */ 
+
+    uint32_t id;                   /* Unique id for stage, used to retrieve
+                                    * stage specific data from global tables */
+
+    bool range_check_enabled;      /* Is entity range checking enabled? */
 } ecs_stage_t;
 
 
@@ -444,9 +447,6 @@ struct ecs_world {
 
     ecs_sparse_t *entity_index;      /* Entity index of main stage */
     ecs_record_t singleton;          /* Singleton record is stored separately */
-    ecs_table_t table_root;          /* Root to table graph */
-    ecs_sparse_t *tables;            /* Iterable storage for tables */
-
 
     /* -- Staging -- */
 

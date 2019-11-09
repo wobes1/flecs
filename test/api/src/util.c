@@ -48,3 +48,27 @@ void ProbeSystem(
 
     ctx->invoked ++;
 }
+
+static
+ecs_entity_t has_entity(
+    SysTestData *ctx, 
+    ecs_entity_t e)
+{
+    uint32_t i;
+    for (i = 0; i < ctx->count; i ++) {
+        if (ctx->e[i] == e) {
+            return e;
+        }
+    }
+
+    return 0;
+}
+
+void test_entity(    
+    SysTestData *ctx, 
+    ecs_entity_t e)
+{
+    /* This way, if the assert fails it will display the entity value with the
+     * has_entity function providing a more descriptive error */
+    test_int(e, has_entity(ctx, e));
+}

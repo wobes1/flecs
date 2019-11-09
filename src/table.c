@@ -48,15 +48,24 @@ void init_edges(
             ecs_edge_t edge = { .add = table };
 
             if (count == 1) {
-                edge.remove = &world->table_root;
+                edge.remove = &world->main_stage.table_root;
             }
 
             ecs_map_set(table->hi_edges, e, &edge);
+
+            if (e & ECS_INSTANCEOF) {
+                table->has_base = true;
+            }
+            if (e & ECS_CHILDOF) {
+                table->has_parent = true;
+            }
+        } else if (e == ecs_entity(EcsPrefab)) {
+            table->is_prefab = true;
         } else {
             table->edges[e].add = table;
 
             if (count == 1) {
-                table->edges[e].remove = &world->table_root;
+                table->edges[e].remove = &world->main_stage.table_root;
             } else {
                 table->edges[e].remove = NULL;
             }
@@ -74,22 +83,23 @@ void init_table(
     ecs_entity_array_t *entities)
 {
     table->type = entities_to_type(entities);
-    table->columns = NULL;
+    memset(table->columns, 0, sizeof(table->columns));
+    table->has_base = 0;
+    table->has_parent = 0;
     
     init_edges(world, table);
 
     table->queries = NULL;
     table->on_new = NULL;
-
-    table->flags = 0;
 }
 
 static
 ecs_table_t *create_table(
     ecs_world_t *world,
+    ecs_stage_t *stage,
     ecs_entity_array_t *entities)
 {
-    ecs_table_t *result = ecs_sparse_add(world->tables, ecs_table_t);
+    ecs_table_t *result = ecs_sparse_add(stage->tables, ecs_table_t);
 
     init_table(world, result, entities);
 
@@ -239,6 +249,58 @@ ecs_table_t *find_or_create_table_exclude(
 }
 
 static
+ecs_table_t* traverse_remove_hi_edges(
+    ecs_world_t *world,
+    ecs_stage_t *stage,
+    ecs_table_t *node,
+    ecs_entity_t e,
+    uint32_t i,
+    ecs_entity_array_t *to_remove,
+    ecs_entity_array_t *removed)
+{
+    uint32_t count = to_remove->count;
+    ecs_entity_t *entities = to_remove->array;
+
+    for (; i < count; i ++) {
+        ecs_entity_t e = entities[i];
+        ecs_entity_t next_e = e;
+        ecs_table_t *next;
+        ecs_edge_t *edge;
+
+        if (e & ECS_CHILDOF) {
+            edge = &node->parent_edge;
+            next_e = ECS_CHILDOF;
+        } else {
+            edge = get_edge(node, e);
+        }
+
+        next = edge->remove;
+
+        if (!next) {
+            next = edge->remove = find_or_create_table_exclude(
+                world, stage, node, next_e);
+            if (!next) {
+                return NULL;
+            }
+
+            edge->remove = next;
+        }
+
+        /* Hi edges should are not removed to the removed array. This array is used
+         * to determine if component actions need to be executed, and entities
+         * that are not a component (>ECS_MAX_COMPONENT) there is never any
+         * component action.
+         *
+         if (removed && node != next) removed->array[removed->count ++] = e;
+         */
+
+        node = next;        
+    }
+
+    return node;
+}
+
+static
 ecs_table_t* traverse_remove(
     ecs_world_t *world,
     ecs_stage_t *stage,
@@ -251,6 +313,13 @@ ecs_table_t* traverse_remove(
 
     for (i = 0; i < count; i ++) {
         ecs_entity_t e = entities[i];
+
+        /* If the array is not a simple component array, use a function that
+         * handles all cases, but is slower */
+        if (e >= ECS_MAX_COMPONENTS) {
+            return traverse_remove_hi_edges(world, stage, node, e, i, to_remove, removed);
+        }
+
         ecs_edge_t *edge = &node->edges[e];
         ecs_table_t *next = edge->remove;
 
@@ -279,7 +348,7 @@ ecs_table_t* traverse_remove(
 }
 
 static
-ecs_table_t* traverse_hi_edges(
+ecs_table_t* traverse_add_hi_edges(
     ecs_world_t *world,
     ecs_stage_t *stage,
     ecs_table_t *node,
@@ -345,7 +414,7 @@ ecs_table_t* traverse_add(
         /* If the array is not a simple component array, use a function that
          * handles all cases, but is slower */
         if (e >= ECS_MAX_COMPONENTS) {
-            return traverse_hi_edges(world, stage, node, e, i, to_add, added);
+            return traverse_add_hi_edges(world, stage, node, e, i, to_add, added);
         }
 
         /* There should always be an edge for adding */
@@ -373,7 +442,7 @@ void ecs_init_root_table(
         .count = 0
     };
 
-    init_table(world, &world->table_root, &entities);
+    init_table(world, &world->main_stage.table_root, &entities);
 }
 
 ecs_column_t* ecs_table_get_columns(
@@ -381,22 +450,27 @@ ecs_column_t* ecs_table_get_columns(
     ecs_stage_t *stage,
     ecs_table_t *table)
 {
-    if (!stage || stage == &world->main_stage) {
-        ecs_column_t *result = table->columns;
-        if (!result) {
-            result = table->columns = ecs_columns_new(world, NULL, table);
-        }
-        return result;
-    } else {
-        return ecs_map_get_ptr(stage->data_stage, ecs_column_t*, (uintptr_t)table->type);
-    } 
+    ecs_column_t *result = table->columns[stage->id];
+
+    if (!result) {
+        result = table->columns[stage->id] = ecs_columns_new(world, table);
+    }
+
+    return result;
 }
 
 void ecs_table_fini(
     ecs_world_t *world,
     ecs_table_t *table)
 {
-    ecs_column_free(world, table, table->columns);
+    int i;
+    for (i = 0; i < ECS_MAX_STAGES; i ++) {
+        ecs_column_t *columns = table->columns[i];
+        if (columns) {
+            ecs_column_free(world, table, columns);
+        }
+    }
+
     ecs_vector_free((ecs_vector_t*)table->type);
     free(table->edges);
     ecs_vector_free(table->queries);
@@ -407,8 +481,9 @@ void ecs_table_clear(
     ecs_world_t *world,
     ecs_table_t *table)
 {
-    if (table->columns) {
-        ecs_columns_clear(table, table->columns);
+    /* This only clears the columns in the main stage! */
+    if (table->columns[0]) {
+        ecs_columns_clear(table, table->columns[0]);
     }
 }
 
@@ -461,9 +536,11 @@ void ecs_entity_array_dedup(
     entities->count -= (k - j);
 }
 
-ecs_table_t *ecs_table_find_or_create(
+static
+ecs_table_t *ecs_table_find_or_create_intern(
     ecs_world_t *world,
     ecs_stage_t *stage,
+    ecs_table_t *root,
     ecs_entity_array_t *entities)
 {    
     uint32_t count;
@@ -472,9 +549,13 @@ ecs_table_t *ecs_table_find_or_create(
         bool is_ordered = true, order_checked = false;
         ecs_entity_t *ordered_entities = NULL;
 
-        ecs_table_t *table = &world->table_root;
+        ecs_table_t *table = root;
         ecs_entity_t *array = entities->array;
         uint32_t i;
+
+        if (!stage) {
+            stage = &world->main_stage;
+        }
 
         for (i = 0; i < count; i ++) {
             ecs_entity_t e = array[i];
@@ -510,7 +591,7 @@ ecs_table_t *ecs_table_find_or_create(
                 if (!order_checked) {
                     is_ordered = ecs_entity_array_is_ordered(entities);
                     order_checked = true;
-                }      
+                }
 
                 /* If the array is ordered, we can use it to create the table */
                 if (is_ordered) {
@@ -521,7 +602,32 @@ ecs_table_t *ecs_table_find_or_create(
 
                     /* If the original array is ordered and the edge was empty, 
                     * the table does not exist, so create it */
-                    table = create_table(world, &table_entities);
+                    if (stage != &world->main_stage) {
+                        /* If we're in staged mode and we have been searching
+                         * the main stage tables, find or create the table in 
+                         * the staging area.
+                         *
+                         * This is expensive, but should rarely happen as 
+                         * eventually the main stage will have tables for all of
+                         * the entity types. */
+                        if (root == &world->main_stage.table_root) {
+                            return ecs_table_find_or_create_intern(
+                                world, stage, &stage->table_root, entities);
+                        } else {
+                            /* If we are staged and we were looking in the table
+                             * root of the stage, the table doesn't exist yet
+                             * and we need to create it in the stage. */
+                            
+                            /* Verify that we weren't accidentally searching the
+                             * wrong stage */
+                            ecs_assert(&stage->table_root == root, 
+                                ECS_INTERNAL_ERROR, NULL);
+                            
+                            table = create_table(world, stage, &table_entities);
+                        }
+                    } else {
+                        table = create_table(world, stage, &table_entities);
+                    }
                 } else {
                     uint32_t count_now = i + 1;
 
@@ -546,8 +652,8 @@ ecs_table_t *ecs_table_find_or_create(
 
                     /* If the original array is unordered we want to check if an
                     * existing table can be found using the ordered array */
-                    table = ecs_table_find_or_create(
-                        world, stage, &table_entities);                                
+                    table = ecs_table_find_or_create_intern(
+                        world, stage, root, &table_entities);                                
                 }                    
 
                 ecs_assert(table != NULL, ECS_INTERNAL_ERROR, NULL);
@@ -564,6 +670,15 @@ ecs_table_t *ecs_table_find_or_create(
     }
 }
 
+ecs_table_t *ecs_table_find_or_create(
+    ecs_world_t *world,
+    ecs_stage_t *stage,
+    ecs_entity_array_t *entities)
+{
+    return ecs_table_find_or_create_intern(
+        world, stage, &world->main_stage.table_root, entities);
+}
+
 ecs_table_t *ecs_table_traverse(
     ecs_world_t *world,
     ecs_stage_t *stage,
@@ -576,7 +691,7 @@ ecs_table_t *ecs_table_traverse(
     ecs_table_t *node = table;
 
     if (!node) {
-        node = &world->table_root;
+        node = &world->main_stage.table_root;
     }
 
     /* Do to_remove first, to limit the depth of the graph */
@@ -588,7 +703,7 @@ ecs_table_t *ecs_table_traverse(
         node = traverse_add(world, stage, node, to_add, added);
     }
 
-    if (node == &world->table_root) {
+    if (node == &world->main_stage.table_root) {
         node = NULL;
     }
 

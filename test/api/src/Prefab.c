@@ -504,6 +504,8 @@ void Prefab_new_type_w_1_override() {
     ecs_set(world, Prefab, Position, {10, 20});
     ecs_set(world, Prefab, Velocity, {30, 40});
 
+    Position *pp = ecs_get_ptr(world, Prefab, Position);
+
     ecs_entity_t e_1 = ecs_new(world, Type);
     test_assert(e_1 != 0);
     test_assert( ecs_has(world, e_1, Position));

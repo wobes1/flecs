@@ -98,8 +98,13 @@ void add_table(
     for (c = 0; c < count; c ++) {
         ecs_signature_column_t *column = &columns[c];
         ecs_entity_t entity = 0, component = 0;
-        ecs_signature_from_kind_t from = column->from;
         ecs_signature_op_kind_t op = column->op;
+        ecs_signature_from_kind_t real_from = column->from;
+        ecs_signature_from_kind_t from = real_from;
+
+        if (op == EcsOperNot) {
+            from = EcsFromEmpty;
+        }
 
         /* NOT operators are converted to EcsFromEmpty */
         ecs_assert(op != EcsOperNot || from == EcsFromEmpty, 
@@ -409,10 +414,10 @@ void match_tables(
     ecs_world_t *world,
     ecs_query_t *query)
 {
-    uint32_t i, count = ecs_sparse_count(world->tables);
+    uint32_t i, count = ecs_sparse_count(world->main_stage.tables);
 
     for (i = 0; i < count; i ++) {
-        ecs_table_t *table = ecs_sparse_get(world->tables, ecs_table_t, i);
+        ecs_table_t *table = ecs_sparse_get(world->main_stage.tables, ecs_table_t, i);
 
         if (match_table(world, table, query)) {
             add_table(world, query, table);
@@ -592,13 +597,13 @@ bool ecs_query_next(
     for (i = iter->index; i < table_count; i ++) {
         ecs_matched_table_t *table = &tables[i];
         ecs_table_t *world_table = table->table;
-        ecs_column_t *table_data = world_table->columns;
+        ecs_column_t *table_data = world_table->columns[0];
 
-        if (!world_table->columns) {
+        if (!table_data) {
             continue;
         }
 
-        uint32_t first = 0, count = ecs_column_count(world_table->columns);
+        uint32_t first = 0, count = ecs_column_count(table_data);
 
         if (offset_limit) {
             if (offset) {

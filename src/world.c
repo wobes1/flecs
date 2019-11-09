@@ -43,7 +43,7 @@ ecs_table_t* bootstrap_table(
     ecs_table_t *result = ecs_table_find_or_create(world, NULL, &entities);
     ecs_assert(result != NULL, ECS_INTERNAL_ERROR, NULL);
 
-    ecs_columns_set_size(world, NULL, result, NULL, 16);
+    ecs_columns_set_size(world, result, NULL, 16);
 
     return result;
 }
@@ -58,15 +58,15 @@ void bootstrap_component(
     size_t size)
 {
     /* Insert record into table to store component itself */
-    int32_t row = ecs_columns_insert(world, table, table->columns, entity);
+    int32_t row = ecs_columns_insert(world, table, table->columns[0], entity);
 
     /* Create record for component entity */
     ecs_record_t record = {.table = table, .row = row + 1};
     ecs_set_entity(world, NULL, entity, &record);
 
     /* Set size and id */
-    EcsComponent *component_data = ecs_vector_first(table->columns[1].data);
-    EcsId *id_data = ecs_vector_first(table->columns[2].data);
+    EcsComponent *component_data = ecs_vector_first(table->columns[0][1].data);
+    EcsId *id_data = ecs_vector_first(table->columns[0][2].data);
     
     component_data[row].size = size;
     id_data[row] = id;
@@ -368,7 +368,6 @@ ecs_world_t *ecs_init(void) {
     world->prefab_parent_index = ecs_map_new(ecs_entity_t, 0);
     world->singleton = (ecs_record_t){0, 0};
     world->entity_index = ecs_sparse_new(ecs_record_t, ECS_MAX_COMPONENTS);
-    world->tables = ecs_sparse_new(ecs_table_t, 16);
 
     world->worker_stages = NULL;
     world->worker_threads = NULL;
@@ -402,6 +401,9 @@ ecs_world_t *ecs_init(void) {
 
     ecs_stage_init(world, &world->main_stage);
     ecs_stage_init(world, &world->temp_stage);
+
+    world->main_stage.id = 0;
+    world->temp_stage.id = 1;
 
     /* Initialize root of table graph */
     ecs_init_root_table(world);
@@ -449,18 +451,6 @@ ecs_world_t *ecs_init(void) {
     return world;
 }
 
-static
-void tables_fini(
-    ecs_world_t *world)
-{
-    uint32_t i, count = ecs_sparse_count(world->tables);
-
-    for (i = 0; i < count; i ++) {
-        ecs_table_t *table = ecs_sparse_get(world->tables, ecs_table_t, i);
-        ecs_table_fini(world, table);
-    }
-}
-
 int ecs_fini(
     ecs_world_t *world)
 {
@@ -494,10 +484,7 @@ int ecs_fini(
     ecs_stage_fini(world, &world->main_stage);
     ecs_stage_fini(world, &world->temp_stage);
 
-    tables_fini(world);
-
     ecs_sparse_free(world->entity_index);
-    ecs_sparse_free(world->tables);
 
     ecs_vector_free(world->on_update_systems);
     ecs_vector_free(world->on_validate_systems);
@@ -620,7 +607,7 @@ void _ecs_dim_type(
 
         ecs_assert(table != NULL, ECS_INTERNAL_ERROR, NULL);
 
-        ecs_columns_set_size(world, NULL, table, table->columns, entity_count);
+        ecs_columns_set_size(world, table, table->columns[0], entity_count);
     }
 }
 
@@ -663,37 +650,28 @@ ecs_entity_t ecs_lookup_child(
     ecs_stage_t *stage = ecs_get_stage(&world);
     ecs_entity_t result = 0;
 
-    if (stage != &world->main_stage) {
-        ecs_map_iter_t it = ecs_map_iter(stage->data_stage);
+    ecs_sparse_t *tables = world->main_stage.tables;
+    uint32_t t, count = ecs_sparse_count(tables);
+    uint32_t prev_stage_id, stage_id = stage->id;
 
-        uint64_t key;
-        ecs_column_t *columns;
-        while ((columns = ecs_map_next_ptr(&it, ecs_column_t*, &key))) {
-            ecs_type_t key_type = (ecs_type_t)(uintptr_t)key;
-            result = ecs_lookup_child_in_columns(key_type, columns, parent, id);
-            if (result) {
-                break;
-            }
-        }
-    }
-
-    if (!result) {
-        ecs_sparse_t *tables = world->tables;
-        uint32_t t, count = ecs_sparse_count(tables);
-
+    do {
         for (t = 0; t < count; t ++) {
             ecs_table_t *table = ecs_sparse_get(tables, ecs_table_t, t);
-            if (!table->columns) {
+            ecs_column_t *columns = table->columns[stage_id];
+            if (!columns) {
                 continue;
             }
             
             result = ecs_lookup_child_in_columns(
-                table->type, table->columns, parent, id);
+                table->type, columns, parent, id);
             if (result) {
                 break;
             }
         }
-    }
+
+        prev_stage_id = stage_id;
+        stage_id = 0;
+    } while (!result && (prev_stage_id != 0));
 
     return result;
 }

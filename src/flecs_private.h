@@ -195,7 +195,6 @@ ecs_table_t *ecs_table_traverse(
 /* Create columns for table */
 ecs_column_t* ecs_columns_new(
     ecs_world_t *world,
-    ecs_stage_t *stage,
     ecs_table_t *table);
 
 /* Free columns */
@@ -236,7 +235,6 @@ uint32_t ecs_columns_grow(
 /* Dimension columns to have n rows (doesn't add entities) */
 int16_t ecs_columns_set_size(
     ecs_world_t *world,
-    ecs_stage_t *stage,
     ecs_table_t *table,
     ecs_column_t *columns,
     uint32_t count);

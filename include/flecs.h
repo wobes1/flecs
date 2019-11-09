@@ -256,10 +256,9 @@ extern ecs_type_t
     TEcsHidden,
     TEcsDisabled;
 
-
-#define ECS_INSTANCEOF ((ecs_entity_t)1 << 63)
-#define ECS_CHILDOF ((ecs_entity_t)1 << 62)
-#define ECS_ENTITY_FLAGS_START (ECS_CHILDOF)
+#define ECS_CHILDOF ((ecs_entity_t)1 << 63)
+#define ECS_INSTANCEOF ((ecs_entity_t)1 << 62)
+#define ECS_ENTITY_FLAGS_START (ECS_INSTANCEOF)
 #define ECS_ENTITY_FLAGS_MASK ((ecs_entity_t)(ECS_INSTANCEOF | ECS_CHILDOF))
 #define ECS_ENTITY_MASK ((ecs_entity_t)~ECS_ENTITY_FLAGS_MASK)
 #define ECS_SINGLETON ((ecs_entity_t)(ECS_ENTITY_MASK) - 1)

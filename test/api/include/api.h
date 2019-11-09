@@ -55,6 +55,8 @@ typedef struct Color {
 
 void ProbeSystem(ecs_rows_t *rows);
 
+void test_entity(SysTestData *ctx, ecs_entity_t e);
+
 #ifdef __cplusplus
 }
 #endif

@@ -62,9 +62,9 @@ void SystemOnFrame_1_type_1_component() {
     test_int(ctx.column_count, 1);
     test_null(ctx.param);
 
-    test_int(ctx.e[0], e_1);
-    test_int(ctx.e[1], e_2);
-    test_int(ctx.e[2], e_3);
+    test_entity(&ctx, e_1);
+    test_entity(&ctx, e_2);
+    test_entity(&ctx, e_3);
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
 
@@ -110,9 +110,9 @@ void SystemOnFrame_1_type_3_component() {
     test_int(ctx.column_count, 3);
     test_null(ctx.param);
 
-    test_int(ctx.e[0], e_1);
-    test_int(ctx.e[1], e_2);
-    test_int(ctx.e[2], e_3);
+    test_entity(&ctx, e_1);
+    test_entity(&ctx, e_2);
+    test_entity(&ctx, e_3);
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
     test_int(ctx.c[0][1], ecs_entity(Velocity));
@@ -191,9 +191,9 @@ void SystemOnFrame_3_type_1_component() {
     test_int(ctx.column_count, 1);
     test_null(ctx.param);
 
-    test_int(ctx.e[0], e_1);
-    test_int(ctx.e[1], e_2);
-    test_int(ctx.e[2], e_3);
+    test_entity(&ctx, e_1);
+    test_entity(&ctx, e_2);
+    test_entity(&ctx, e_3);
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
     test_int(ctx.c[1][0], ecs_entity(Position));
@@ -244,9 +244,9 @@ void SystemOnFrame_2_type_3_component() {
     test_int(ctx.column_count, 3);
     test_null(ctx.param);
 
-    test_int(ctx.e[0], e_1);
-    test_int(ctx.e[1], e_2);
-    test_int(ctx.e[2], e_3);
+    test_entity(&ctx, e_1);
+    test_entity(&ctx, e_2);
+    test_entity(&ctx, e_3);
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
     test_int(ctx.c[0][1], ecs_entity(Velocity));
@@ -330,9 +330,9 @@ void SystemOnFrame_1_type_1_component_1_tag() {
     test_int(ctx.column_count, 2);
     test_null(ctx.param);
 
-    test_int(ctx.e[0], e_1);
-    test_int(ctx.e[1], e_2);
-    test_int(ctx.e[2], e_3);
+    test_entity(&ctx, e_1);
+    test_entity(&ctx, e_2);
+    test_entity(&ctx, e_3);
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
     test_int(ctx.c[0][1], Tag);
@@ -379,8 +379,8 @@ void SystemOnFrame_2_type_1_component_1_tag() {
     test_int(ctx.column_count, 2);
     test_null(ctx.param);
 
-    test_int(ctx.e[0], e_1);
-    test_int(ctx.e[1], e_2);
+    test_entity(&ctx, e_1);
+    test_entity(&ctx, e_2);
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
     test_int(ctx.c[0][1], Tag);
@@ -423,8 +423,8 @@ void SystemOnFrame_2_type_1_and_1_not() {
     test_int(ctx.column_count, 2);
     test_null(ctx.param);
 
-    test_int(ctx.e[0], e_1);
-    test_int(ctx.e[1], e_2);
+    test_entity(&ctx, e_1);
+    test_entity(&ctx, e_2);
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
     test_int(ctx.c[0][1], ecs_entity(Velocity));
@@ -467,8 +467,8 @@ void SystemOnFrame_2_type_2_and_1_not() {
     test_int(ctx.column_count, 3);
     test_null(ctx.param);
 
-    test_int(ctx.e[0], e_1);
-    test_int(ctx.e[1], e_2);
+    test_entity(&ctx, e_1);
+    test_entity(&ctx, e_2);
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
     test_int(ctx.c[0][1], ecs_entity(Velocity));
@@ -524,7 +524,7 @@ void SystemOnFrame_2_type_2_and_2_not() {
     test_int(ctx.column_count, 4);
     test_null(ctx.param);
 
-    test_int(ctx.e[0], e_1);
+    test_entity(&ctx, e_1);
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
     test_int(ctx.c[0][1], ecs_entity(Velocity));
@@ -578,9 +578,9 @@ void SystemOnFrame_4_type_1_and_1_or() {
     test_int(ctx.column_count, 2);
     test_null(ctx.param);
 
-    test_int(ctx.e[0], e_1);
-    test_int(ctx.e[1], e_2);
-    test_int(ctx.e[2], e_3);
+    test_entity(&ctx, e_1);
+    test_entity(&ctx, e_2);
+    test_entity(&ctx, e_3);
 
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
@@ -667,9 +667,9 @@ void SystemOnFrame_4_type_1_and_1_or_of_3() {
     test_int(ctx.column_count, 2);
     test_null(ctx.param);
 
-    test_int(ctx.e[0], e_1);
-    test_int(ctx.e[1], e_2);
-    test_int(ctx.e[2], e_3);
+    test_entity(&ctx, e_1);
+    test_entity(&ctx, e_2);
+    test_entity(&ctx, e_3);
 
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
@@ -750,8 +750,8 @@ void SystemOnFrame_1_type_1_and_1_or() {
     test_int(ctx.column_count, 2);
     test_null(ctx.param);
 
-    test_int(ctx.e[0], e_1);
-    test_int(ctx.e[1], e_2);
+    test_entity(&ctx, e_1);
+    test_entity(&ctx, e_2);
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
     test_int(ctx.c[0][1], ecs_entity(Velocity));
@@ -774,8 +774,8 @@ void SystemOnFrame_1_type_1_and_1_or() {
     test_int(ctx.column_count, 2);
     test_null(ctx.param);
 
-    test_int(ctx.e[0], e_3);
-    test_int(ctx.e[1], e_4);
+    test_entity(&ctx, e_3);
+    test_entity(&ctx, e_4);
     test_int(ctx.c[0][0], ecs_entity(Position_1));
     test_int(ctx.s[0][0], 0);
     test_int(ctx.c[0][1], ecs_entity(Velocity));
@@ -807,9 +807,9 @@ void SystemOnFrame_2_type_1_and_1_optional() {
     test_int(ctx.column_count, 2);
     test_null(ctx.param);
 
-    test_int(ctx.e[0], e_1);
-    test_int(ctx.e[1], e_2);
-    test_int(ctx.e[2], e_3);
+    test_entity(&ctx, e_1);
+    test_entity(&ctx, e_2);
+    test_entity(&ctx, e_3);
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
     test_int(ctx.c[0][1], ecs_entity(Velocity));
@@ -871,9 +871,9 @@ void SystemOnFrame_2_type_2_and_1_optional() {
     test_int(ctx.column_count, 3);
     test_null(ctx.param);
 
-    test_int(ctx.e[0], e_1);
-    test_int(ctx.e[1], e_2);
-    test_int(ctx.e[2], e_3);
+    test_entity(&ctx, e_1);
+    test_entity(&ctx, e_2);
+    test_entity(&ctx, e_3);
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
     test_int(ctx.c[0][1], ecs_entity(Velocity));
@@ -951,10 +951,10 @@ void SystemOnFrame_6_type_1_and_2_optional() {
     test_int(ctx.column_count, 3);
     test_null(ctx.param);
 
-    test_int(ctx.e[0], e_1);
-    test_int(ctx.e[1], e_2);
-    test_int(ctx.e[2], e_3);
-    test_int(ctx.e[3], e_4);
+    test_entity(&ctx, e_1);
+    test_entity(&ctx, e_2);
+    test_entity(&ctx, e_3);
+    test_entity(&ctx, e_4);
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
     test_int(ctx.c[0][1], ecs_entity(Velocity));
@@ -1105,8 +1105,8 @@ void SystemOnFrame_match_2_systems_w_populated_table() {
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
 
-    test_int(ctx.e[0], e);
-    test_int(ctx.e[1], e);
+    test_entity(&ctx, e);
+    test_entity(&ctx, e);
 
     ecs_fini(world);
 }
@@ -1167,7 +1167,7 @@ void SystemOnFrame_ensure_optional_is_unset_column() {
     test_int(ctx.c[0][1], ecs_entity(Velocity));
     test_int(ctx.s[0][1], 0);
 
-    test_int(ctx.e[0], e);
+    test_entity(&ctx, e);
 
     ecs_fini(world);
 }
@@ -1195,7 +1195,7 @@ void SystemOnFrame_ensure_optional_is_null_shared() {
     test_int(ctx.c[0][1], ecs_entity(Velocity));
     test_int(ctx.s[0][1], 0);
 
-    test_int(ctx.e[0], e);
+    test_entity(&ctx, e);
 
     ecs_fini(world);
 }
@@ -1223,7 +1223,7 @@ void SystemOnFrame_ensure_optional_is_null_field_owned() {
     test_int(ctx.c[0][1], ecs_entity(Velocity));
     test_int(ctx.s[0][1], 0);
 
-    test_int(ctx.e[0], e);
+    test_entity(&ctx, e);
 
     ecs_fini(world);
 }
@@ -1251,7 +1251,7 @@ void SystemOnFrame_ensure_optional_is_null_field_shared() {
     test_int(ctx.c[0][1], ecs_entity(Velocity));
     test_int(ctx.s[0][1], 0);
 
-    test_int(ctx.e[0], e);
+    test_entity(&ctx, e);
 
     ecs_fini(world);
 }
@@ -1488,7 +1488,7 @@ void SystemOnFrame_two_refs() {
     test_int(ctx.c[0][3], ecs_entity(Mass));
     test_int(ctx.s[0][3], 0);
 
-    test_int(ctx.e[0], E2);
+    test_entity(&ctx, E2);
 
     ecs_fini(world);
 }
@@ -1511,7 +1511,7 @@ void SystemOnFrame_filter_disabled() {
     test_int(ctx.count, 1);
     test_int(ctx.invoked, 1);
     test_int(ctx.column_count, 1);
-    test_int(ctx.e[0], Entity1);
+    test_entity(&ctx, Entity1);
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
 
@@ -1535,7 +1535,7 @@ void SystemOnFrame_match_disabled() {
 
     test_int(ctx.count, 1);
     test_int(ctx.invoked, 1);
-    test_int(ctx.e[0], Entity2);
+    test_entity(&ctx, Entity2);
     test_int(ctx.column_count, 2);
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
@@ -1562,8 +1562,8 @@ void SystemOnFrame_match_disabled_and_enabled() {
 
     test_int(ctx.count, 2);
     test_int(ctx.invoked, 2);
-    test_int(ctx.e[0], Entity1);
-    test_int(ctx.e[1], Entity2);
+    test_entity(&ctx, Entity1);
+    test_entity(&ctx, Entity2);
     test_int(ctx.column_count, 2);
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
@@ -1590,7 +1590,7 @@ void SystemOnFrame_match_prefab() {
 
     test_int(ctx.count, 1);
     test_int(ctx.invoked, 1);
-    test_int(ctx.e[0], Entity2);
+    test_entity(&ctx, Entity2);
     test_int(ctx.column_count, 2);
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
@@ -1617,8 +1617,8 @@ void SystemOnFrame_match_prefab_and_normal() {
 
     test_int(ctx.count, 2);
     test_int(ctx.invoked, 2);
-    test_int(ctx.e[0], Entity1);
-    test_int(ctx.e[1], Entity2);
+    test_entity(&ctx, Entity1);
+    test_entity(&ctx, Entity2);
     test_int(ctx.column_count, 2);
     test_int(ctx.c[0][0], ecs_entity(Position));
     test_int(ctx.s[0][0], 0);
@@ -1662,6 +1662,7 @@ void SystemOnFrame_owned_column() {
 
     ECS_ENTITY(world, base, Velocity);
     ECS_ENTITY(world, e1, Position, Velocity);
+
     ECS_ENTITY(world, e2, Position, INSTANCEOF | base);
 
     ECS_SYSTEM(world, Iter, EcsOnUpdate, Position, OWNED.Velocity);
@@ -1678,7 +1679,7 @@ void SystemOnFrame_owned_column() {
     test_int(ctx.s[0][0], 0);
     test_int(ctx.c[0][1], ecs_entity(Velocity));
     test_int(ctx.s[0][1], 0);
-    test_int(ctx.e[0], e1);
+    test_entity(&ctx, e1);
 
     ecs_fini(world);
 }
@@ -1707,7 +1708,7 @@ void SystemOnFrame_owned_not_column() {
     test_int(ctx.s[0][0], 0);
     test_int(ctx.c[0][1], ecs_entity(Velocity));
     test_int(ctx.s[0][1], 0);
-    test_int(ctx.e[0], e2);
+    test_entity(&ctx, e2);
 
     ecs_fini(world);
 }
@@ -1737,7 +1738,7 @@ void SystemOnFrame_shared_column() {
     test_int(ctx.s[0][0], 0);
     test_int(ctx.c[0][1], ecs_entity(Velocity));
     test_int(ctx.s[0][1], base);
-    test_int(ctx.e[0], e2);
+    test_entity(&ctx, e2);
 
     ecs_fini(world);
 }
@@ -1766,7 +1767,7 @@ void SystemOnFrame_shared_not_column() {
     test_int(ctx.s[0][0], 0);
     test_int(ctx.c[0][1], ecs_entity(Velocity));
     test_int(ctx.s[0][1], 0);
-    test_int(ctx.e[0], e1);
+    test_entity(&ctx, e1);
 
     ecs_fini(world);
 }
@@ -1795,7 +1796,7 @@ void SystemOnFrame_container_dont_match_inheritance() {
     test_int(ctx.s[0][0], 0);
     test_int(ctx.c[0][1], ecs_entity(Velocity));
     test_int(ctx.s[0][1], base);
-    test_int(ctx.e[0], e2);
+    test_entity(&ctx, e2);
 
     ecs_fini(world);
 }
@@ -1828,8 +1829,8 @@ void SystemOnFrame_cascade_dont_match_inheritance() {
     test_int(ctx.s[1][0], 0);
     test_int(ctx.c[1][1], ecs_entity(Velocity));
     test_int(ctx.s[1][1], base);    
-    test_int(ctx.e[0], e1);
-    test_int(ctx.e[1], e2);
+    test_entity(&ctx, e1);
+    test_entity(&ctx, e2);
 
     ecs_fini(world);
 }

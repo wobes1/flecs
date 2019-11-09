@@ -151,7 +151,11 @@ bool ecs_needs_tables(
 
     for (i = 0; i < count; i ++) {
         ecs_signature_column_t *elem = &columns[i];
-        if (elem->from == EcsFromSelf || elem->from == EcsFromContainer) {
+        if (elem->from == EcsFromSelf || 
+            elem->from == EcsFromOwned ||
+            elem->from == EcsFromShared ||
+            elem->from == EcsFromContainer) 
+        {
             return true;
         }
     }
@@ -212,10 +216,10 @@ int ecs_parse_component_expr(
 
                 if (oper_kind == EcsOperNot && prev_oper_kind == EcsOperOr) {
                     ecs_abort(ECS_INVALID_EXPRESSION, sig);
-                }
+                }             
             }
 
-           if (oper_kind == EcsOperOr) {
+            if (oper_kind == EcsOperOr) {
                 if (elem_kind == EcsFromEmpty) {
                     /* Cannot OR handles */
                     ecs_abort(ECS_INVALID_EXPRESSION, sig);
@@ -257,6 +261,9 @@ int ecs_parse_component_expr(
             elem_kind = EcsFromSelf;
 
             if (ch == '|') {
+                if (oper_kind == EcsOperNot) {
+                    ecs_abort(ECS_INVALID_EXPRESSION, sig);
+                }   
                 oper_kind = EcsOperOr;
             } else {
                 oper_kind = EcsOperAnd;
@@ -344,13 +351,10 @@ int ecs_new_signature_action(
         elem->is.type = ecs_type_add_intern(
             world, NULL, elem->is.type, component);
 
-    /* A system stores two NOT familes; one for entities and one for components.
-     * These can be quickly & efficiently used to exclude tables with
-     * ecs_type_contains. */
     } else if (op == EcsOperNot) {
         elem = ecs_vector_add(&sig->columns, ecs_signature_column_t);
         elem->is.component = component;
-        elem->from = EcsFromEmpty;
+        elem->from = from;
         elem->op = op;  
     } else if (from == EcsFromEntity) {
         elem = ecs_vector_add(&sig->columns, ecs_signature_column_t);
