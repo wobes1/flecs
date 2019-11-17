@@ -169,7 +169,7 @@ void ecs_columns_delete(
 
         /* Update record of moved entity in entity index */
         if (stage == &world->main_stage) {
-            record_to_move->row = index;
+            record_to_move->row = index + 1;
         } else {
             ecs_record_t row;
             row.table = table;
@@ -395,6 +395,38 @@ void ecs_columns_move_back_and_swap(
     }
 }
 
+void merge_vector(
+    ecs_vector_t **dst_out,
+    ecs_vector_t *src,
+    uint32_t size)
+{
+    ecs_vector_t *dst = *dst_out;
+    uint32_t dst_count = ecs_vector_count(dst);
+
+    if (!dst_count) {
+        if (dst) {
+            ecs_vector_free(dst);
+        }
+
+        *dst_out = src;
+    
+    /* If the new table is not empty, copy the contents from the
+     * src into the dst. */
+    } else {
+        uint32_t src_count = ecs_vector_count(src);
+        _ecs_vector_set_count(&dst, size, dst_count + src_count);
+        
+        void *dst_ptr = ecs_vector_first(dst);
+        void *src_ptr = ecs_vector_first(src);
+
+        dst_ptr = ECS_OFFSET(dst_ptr, size * src_count);
+        memcpy(dst_ptr, src_ptr, size * src_count);
+
+        ecs_vector_free(src);
+        *dst_out = dst;
+    }    
+}
+
 void ecs_columns_merge(
     ecs_world_t *world,
     ecs_table_t *dst_table,
@@ -406,8 +438,6 @@ void ecs_columns_merge(
     ecs_type_t dst_type = dst_table ? dst_table->type : NULL;
     ecs_type_t src_type = src_table->type;
     ecs_assert(dst_type != src_type, ECS_INTERNAL_ERROR, NULL);
-
-    ecs_columns_t *dst_columns = dst_table ? dst_table->columns[0] : NULL;
     ecs_columns_t *src_columns = src_table->columns[0];
 
     if (!src_columns) {
@@ -416,9 +446,6 @@ void ecs_columns_merge(
 
     uint32_t src_count = src_columns->entities ? ecs_vector_count(src_columns->entities) : 0;
     uint32_t dst_count = 0;
-    if (dst_columns) {
-        dst_count = dst_columns->entities ? ecs_vector_count(dst_columns->entities) : 0;
-    }
 
     /* First, update entity index so old entities point to new type */
     ecs_record_t **src_records = ecs_vector_first(src_columns->record_ptrs);
@@ -434,6 +461,13 @@ void ecs_columns_merge(
         ecs_columns_clear(src_table, src_columns);
         return;
     }
+
+    ecs_columns_t *dst_columns = dst_table->columns[0];
+    if (!dst_columns) {
+        dst_columns = dst_table->columns[0] = ecs_columns_new(world, dst_table);
+    }
+
+    dst_count = dst_columns->entities ? ecs_vector_count(dst_columns->entities) : 0;
 
     uint16_t i_dst, dst_component_count = ecs_vector_count(dst_type);
     uint16_t i_src = 0, src_component_count = ecs_vector_count(src_type);
@@ -474,38 +508,9 @@ void ecs_columns_merge(
         ecs_column_t *src_component_column = &src_component_columns[i_src];
 
         if (dst_component == src_component) {
-            /* If the new table is empty, move column to new table */
-            if (!dst_count) {
-                if (!dst_columns) {
-                    dst_columns = ecs_columns_new(world, dst_table);
-                    dst_table->columns[0] = dst_columns;
-                }
-
-                if (dst_component_column->data) {
-                    ecs_vector_free(dst_component_column->data);
-                }
-
-                dst_component_column->data = src_component_column->data;
-                dst_component_column->data = NULL;
-            
-            /* If the new table is not empty, copy the contents from the
-             * smallest into the largest vector. */
-            } else {
-                ecs_vector_t *dst = dst_component_column->data;
-                ecs_vector_t *src = src_component_column->data;
-
-                _ecs_vector_set_count(&dst, size, dst_count + src_count);
-                
-                void *dst_ptr = ecs_vector_first(dst);
-                void *src_ptr = ecs_vector_first(src);
-
-                dst_ptr = ECS_OFFSET(dst_ptr, size * src_count);
-                memcpy(dst_ptr, src_ptr, size * src_count);
-
-                ecs_vector_free(src);
-                src_component_column->data = NULL;
-                dst_component_column->data = dst;
-            }
+            merge_vector(
+                &dst_component_column->data, src_component_column->data, size);
+            src_component_column->data = NULL;
             
             i_dst ++;
             i_src ++;
@@ -520,6 +525,14 @@ void ecs_columns_merge(
             i_src ++;
         }
     }
+
+    /* Merge entities and record_ptrs vector */
+    merge_vector(&dst_columns->entities, src_columns->entities, 
+        sizeof(ecs_entity_t));
+    merge_vector(&dst_columns->record_ptrs, src_columns->record_ptrs, 
+        sizeof(ecs_record_t*));
+    src_columns->entities = NULL;
+    src_columns->record_ptrs = NULL;    
 }
 
 static

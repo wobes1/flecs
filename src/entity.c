@@ -1450,7 +1450,7 @@ uint32_t update_entity_index(
     if (same_origin) {
         contiguous_count = count;
     } else {
-        contiguous_count = prev_src_row - src_first_contiguous_row + 1;
+        contiguous_count = src_row - src_first_contiguous_row + 1;
     }
 
     if (src_table) {
