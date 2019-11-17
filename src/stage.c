@@ -1,35 +1,19 @@
 #include "flecs_private.h"
 
 static
-void merge_families(
+void merge_data(
     ecs_world_t *world,
     ecs_stage_t *stage)
 {
+    /* Loop the tables for which the stage has modified data */
+    uint32_t i, count = ecs_vector_count(stage->dirty_tables);
+    ecs_table_t **tables = ecs_vector_first(stage->dirty_tables);
 
-}
-
-static
-void notify_new_tables(
-    ecs_world_t *world, 
-    uint32_t old_table_count, 
-    uint32_t new_table_count) 
-{
-
-}
-
-static
-void merge_commits(
-    ecs_world_t *world,
-    ecs_stage_t *stage)
-{  
-
-}
-
-static
-void clean_types(
-    ecs_stage_t *stage)
-{
-
+    for (i = 0; i < count; i ++) {
+        ecs_table_t *table = tables[i];
+        ecs_column_t *main_columns = ecs_table_get_columns(world, &world->main_stage, table);
+        ecs_column_t *columns = ecs_table_get_columns(world, stage, table);
+    }
 }
 
 static
@@ -66,6 +50,7 @@ void ecs_stage_init(
     /* These data structures are only used when not in the main stage */
     if (!is_main_stage) {
         stage->entity_index = ecs_map_new(ecs_record_t, 0);
+        stage->dirty_tables = ecs_vector_new(ecs_table_t*, 0);
     }
 
     stage->range_check_enabled = true;
@@ -87,6 +72,7 @@ void ecs_stage_fini(
     /* These data structures are only used when not in the main stage */
     if (!is_main_stage) {
         ecs_map_free(stage->entity_index);
+        ecs_vector_free(stage->dirty_tables);
     }
 }
 
@@ -94,5 +80,5 @@ void ecs_stage_merge(
     ecs_world_t *world,
     ecs_stage_t *stage)
 {
-
+    merge_data(world, stage);
 }

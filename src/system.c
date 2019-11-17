@@ -127,7 +127,7 @@ void ecs_run_row_system(
     ecs_world_t *world,
     ecs_entity_t system,
     ecs_table_t *table,
-    ecs_column_t *table_columns,
+    ecs_columns_t *table_columns,
     uint32_t offset,
     uint32_t limit)
 {
@@ -230,7 +230,7 @@ void ecs_run_row_system(
 
     /* Obtain pointer to vector with entity identifiers */
     if (table_columns) {
-        ecs_entity_t *entities = ecs_vector_first(table_columns[0].data);
+        ecs_entity_t *entities = ecs_vector_first(table_columns->entities);
         rows.entities = &entities[rows.offset];
     }
 
@@ -419,10 +419,15 @@ void* get_owned_column(
     ecs_assert(rows->table_columns != NULL, ECS_INTERNAL_ERROR, NULL);
     (void)size;
 
-    ecs_column_t *column = &((ecs_column_t*)rows->table_columns)[table_column];
+    ecs_columns_t *columns = rows->table_columns;
+    ecs_column_t *column = &columns->components[table_column];
     ecs_assert(column->size != 0, ECS_COLUMN_HAS_NO_DATA, NULL);
     ecs_assert(!size || column->size == size, ECS_COLUMN_TYPE_MISMATCH, NULL);
+
     void *buffer = ecs_vector_first(column->data);
+
+    ecs_assert(buffer != NULL, ECS_INVALID_PARAMETER, NULL);
+
     return ECS_OFFSET(buffer, column->size * rows->offset);
 }
 
@@ -466,6 +471,8 @@ bool get_table_column(
             /* column is not set */
             return false;
         }
+
+        table_column --;
     }
 
     *table_column_out = table_column;
@@ -480,12 +487,15 @@ void* get_column(
     uint32_t column,
     uint32_t row)
 {
-    int32_t table_column;
+    if (!column) {
+        return rows->entities;
+    }
 
+    int32_t table_column;
     if (!get_table_column(rows, column, &table_column)) {
         return NULL;
     }
-
+    
     if (table_column < 0) {
         return get_shared_column(rows, size, table_column);
     } else {
@@ -588,7 +598,15 @@ void* ecs_table_column(
     uint32_t column)
 {
     ecs_table_t *table = rows->table;
-    return ecs_vector_first(table->columns[0][column + 1].data);
+    ecs_columns_t *columns = table->columns[0];
+    if (columns) {
+        ecs_column_t *component_columns = columns->components;
+        if (component_columns) {
+            return ecs_vector_first(component_columns[column].data);
+        }
+    }
+
+    return NULL;
 }
 
 static

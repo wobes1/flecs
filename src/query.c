@@ -597,13 +597,13 @@ bool ecs_query_next(
     for (i = iter->index; i < table_count; i ++) {
         ecs_matched_table_t *table = &tables[i];
         ecs_table_t *world_table = table->table;
-        ecs_column_t *table_data = world_table->columns[0];
+        ecs_columns_t *table_data = world_table->columns[0];
 
         if (!table_data) {
             continue;
         }
 
-        uint32_t first = 0, count = ecs_column_count(table_data);
+        uint32_t first = 0, count = ecs_columns_count(table_data);
 
         if (offset_limit) {
             if (offset) {
@@ -637,7 +637,7 @@ bool ecs_query_next(
         }
 
         rows->table = world_table;
-        rows->columns =  table->columns;
+        rows->columns = table->columns;
         rows->table_columns = table_data;
         
         rows->components = table->components;

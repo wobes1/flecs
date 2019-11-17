@@ -110,8 +110,9 @@ typedef struct ecs_column_t {
 
 /** Columns for a table. This type is used by the entity index */
 typedef struct ecs_columns_t {
-    ecs_table_t *table;              /* Backlink to table */
-    ecs_column_t *columns;           /* Columns storing component data */
+    ecs_vector_t *entities;    /* Entity identifiers */
+    ecs_vector_t *record_ptrs; /* Ptrs to entity index records in main stage */
+    ecs_column_t *components;  /* Columns storing component data */
 } ecs_columns_t;
 
 /** Edge used for traversing the table graph */
@@ -125,7 +126,7 @@ typedef struct ecs_edge_t {
 struct ecs_table_t {
     ecs_type_t type;              /* Type containing component ids */
     
-    ecs_column_t *columns[ECS_MAX_STAGES]; /* Columns/stage with component data */
+    ecs_columns_t *columns[ECS_MAX_STAGES]; /* Data columns per stage */
 
     ecs_columns_t *child_columns; /* Columns used to store child entities. The
                                    * index in the column is a bitset derived
@@ -136,7 +137,7 @@ struct ecs_table_t {
     ecs_vector_t *on_new;         /* Systems executed when new entity is
                                    * created in this table. */
 
-    ecs_edge_t *edges;            /* Edges to other tables */
+    ecs_edge_t *edges;            /* Array with edges to other tables */
     ecs_edge_t parent_edge;       /* Edge to tables with CHILDOF columns */
     ecs_map_t *hi_edges;          /* Edges to high entity ids (>= MAX_COMPONENT) */
 
@@ -333,6 +334,8 @@ typedef struct ecs_stage_t {
     uint32_t id;                   /* Unique id for stage, used to retrieve
                                     * stage specific data from global tables */
 
+    ecs_vector_t *dirty_tables;    /* List of tables that need to be merged */
+
     bool range_check_enabled;      /* Is entity range checking enabled? */
 } ecs_stage_t;
 
@@ -373,7 +376,7 @@ typedef struct ecs_entity_info_t {
     ecs_entity_t entity;        /* Entity identifier */
     ecs_record_t *record;       /* Record in entity index */
     ecs_table_t *table;         /* Table of entity */
-    ecs_column_t *columns;      /* Columns in which entity data is stored */
+    ecs_columns_t *columns;     /* Columns in which entity data is stored */
     ecs_type_t type;            /* Type of entity */
     int32_t row;                /* Row in which the entity is stored */
     bool is_watched;            /* Is entity being watched */

@@ -7,6 +7,10 @@
 
 /* -- Entity API -- */
 
+ecs_record_t* ecs_register_entity(
+    ecs_world_t *world,
+    ecs_entity_t entity);
+
 void ecs_set_entity(
     ecs_world_t *world,
     ecs_stage_t *stage,
@@ -192,83 +196,19 @@ ecs_table_t *ecs_table_traverse(
     ecs_entity_array_t *added,
     ecs_entity_array_t *removed);
 
-/* Create columns for table */
-ecs_column_t* ecs_columns_new(
-    ecs_world_t *world,
-    ecs_table_t *table);
-
-/* Free columns */
-void ecs_column_free(
-    ecs_world_t *world,
-    ecs_table_t *table,
-    ecs_column_t *columns);
-
+/* Cleanup table resources */
 void ecs_table_fini(
     ecs_world_t *world,
     ecs_table_t *table);
 
-/* Insert row into columns */
-uint32_t ecs_columns_insert(
+/* Clear table data */
+void ecs_table_clear(
     ecs_world_t *world,
-    ecs_table_t *table,
-    ecs_column_t *columns,
-    ecs_entity_t entity);
-
-void ecs_columns_delete(
-    ecs_world_t *world,
-    ecs_stage_t *stage,
-    ecs_table_t *table,
-    ecs_column_t *columns,
-    int32_t sindex);
-
-uint64_t ecs_column_count(
-    ecs_column_t *columns);
-
-/* Grow columns with specified size */
-uint32_t ecs_columns_grow(
-    ecs_world_t *world,
-    ecs_table_t *table,
-    ecs_column_t *columns,
-    uint32_t count,
-    ecs_entity_t first_entity);
-
-/* Dimension columns to have n rows (doesn't add entities) */
-int16_t ecs_columns_set_size(
-    ecs_world_t *world,
-    ecs_table_t *table,
-    ecs_column_t *columns,
-    uint32_t count);
-
-/* Return number of entities in table */
-uint64_t ecs_columns_count(
     ecs_table_t *table);
 
-void ecs_columns_swap(
-    ecs_world_t *world,
-    ecs_stage_t *stage,
-    ecs_table_t *table,
-    ecs_column_t *columns,
-    int32_t row_1,
-    int32_t row_2,
-    ecs_record_t *row_ptr_1,
-    ecs_record_t *row_ptr_2);
-
-void ecs_columns_move_back_and_swap(
-    ecs_world_t *world,
-    ecs_stage_t *stage,
-    ecs_table_t *table,
-    ecs_column_t *columns,
-    uint32_t row,
-    uint32_t count);  
-
-void ecs_columns_merge(
-    ecs_world_t *world,
-    ecs_table_t *new_table,
-    ecs_table_t *old_table);    
-
-void ecs_columns_clear(
-    ecs_table_t *table,
-    ecs_column_t *columns);      
+/* Return number of entities in table */
+uint64_t ecs_table_count(
+    ecs_table_t *table);
 
 /* Return size of table row */
 uint32_t ecs_table_row_size(
@@ -300,19 +240,104 @@ void ecs_table_deinit(
     ecs_world_t *world,
     ecs_table_t *table);
 
-/* Free table */
-void ecs_table_free(
-    ecs_world_t *world,
-    ecs_table_t *table);
-
-void ecs_table_clear(
-    ecs_world_t *world,
-    ecs_table_t *table);
-
-ecs_column_t* ecs_table_get_columns(
+/* Get stage-specific columns from table */
+ecs_columns_t* ecs_table_get_columns(
     ecs_world_t *world,
     ecs_stage_t *stage,
     ecs_table_t *table);
+
+/* -- Column API -- */
+
+/* Create columns for table */
+ecs_columns_t* ecs_columns_new(
+    ecs_world_t *world,
+    ecs_table_t *table);
+
+void ecs_columns_free(
+    ecs_world_t *world,
+    ecs_table_t *table,
+    ecs_columns_t *columns);
+
+/* Free columns */
+void ecs_column_free(
+    ecs_world_t *world,
+    ecs_table_t *table,
+    ecs_columns_t *columns);
+
+/* Insert row into columns */
+uint32_t ecs_columns_insert(
+    ecs_world_t *world,
+    ecs_stage_t *stage,
+    ecs_table_t *table,
+    ecs_columns_t *columns,
+    ecs_entity_t entity,
+    ecs_record_t *record);
+
+/* Delete entity from columns */
+void ecs_columns_delete(
+    ecs_world_t *world,
+    ecs_stage_t *stage,
+    ecs_table_t *table,
+    ecs_columns_t *columns,
+    int32_t sindex);
+
+/* Return number of entities in columns */
+uint64_t ecs_columns_count(
+    ecs_columns_t *columns);
+
+/* Grow columns with specified size */
+uint32_t ecs_columns_grow(
+    ecs_world_t *world,
+    ecs_table_t *table,
+    ecs_columns_t *columns,
+    uint32_t count,
+    ecs_entity_t first_entity);
+
+/* Dimension columns to have n rows (does not add entities) */
+int16_t ecs_columns_set_size(
+    ecs_world_t *world,
+    ecs_table_t *table,
+    ecs_columns_t *columns,
+    uint32_t count);
+
+/* Swap two entities */
+void ecs_columns_swap(
+    ecs_world_t *world,
+    ecs_stage_t *stage,
+    ecs_table_t *table,
+    ecs_columns_t *columns,
+    int32_t row_1,
+    int32_t row_2,
+    ecs_record_t *row_ptr_1,
+    ecs_record_t *row_ptr_2);
+
+/* Swap n entities with entity preceding them */
+void ecs_columns_move_back_and_swap(
+    ecs_world_t *world,
+    ecs_stage_t *stage,
+    ecs_table_t *table,
+    ecs_columns_t *columns,
+    uint32_t row,
+    uint32_t count);  
+
+void ecs_columns_merge(
+    ecs_world_t *world,
+    ecs_table_t *new_table,
+    ecs_table_t *old_table);    
+
+/* Move row from one set of columns to (partially) overlapping set of columns */
+void ecs_columns_move(
+    ecs_type_t dst_type,
+    ecs_columns_t *dst_columns,
+    int32_t dst_index,
+    ecs_type_t src_type,
+    ecs_columns_t *src_columns,
+    int32_t src_index);
+
+/* Clear column data */
+void ecs_columns_clear(
+    ecs_table_t *table,
+    ecs_columns_t *columns);      
 
 /* -- System API -- */
 
@@ -351,7 +376,7 @@ void ecs_run_row_system(
     ecs_world_t *world,
     ecs_entity_t system,
     ecs_table_t *table,
-    ecs_column_t *table_columns,
+    ecs_columns_t *table_columns,
     uint32_t offset,
     uint32_t limit);
 

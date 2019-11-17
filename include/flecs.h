@@ -2302,12 +2302,13 @@ void _ecs_assert(
 #define ECS_COLUMN(rows, type, id, column)\
     ECS_COLUMN_DATA(rows, type, id, column);\
     ECS_COLUMN_TYPE(rows, type, column);\
-    ECS_COLUMN_COMPONENT(rows, type, column)
+    ECS_COLUMN_COMPONENT(rows, type, column);\
+    ecs_assert(id != NULL, ECS_INVALID_PARAMETER, NULL)
 
 /* Retrieve metadata for column (use when column is not a component) */
 #define ECS_META_COLUMN(rows, type, column)\
     ECS_COLUMN_ENTITY(rows, type, column);\
-    ECS_COLUMN_TYPE(rows, type, column)
+    ECS_COLUMN_TYPE(rows, type, column);\
 
 /** Retrieve data pointer from column (supporting macro) */
 #define ECS_COLUMN_DATA(rows, type, id, column)\

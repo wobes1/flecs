@@ -57,16 +57,20 @@ void bootstrap_component(
     const char *id,
     size_t size)
 {
-    /* Insert record into table to store component itself */
-    int32_t row = ecs_columns_insert(world, table, table->columns[0], entity);
-
     /* Create record for component entity */
-    ecs_record_t record = {.table = table, .row = row + 1};
-    ecs_set_entity(world, NULL, entity, &record);
+    ecs_record_t *record = ecs_register_entity(world, entity);
+
+    /* Insert row into table to store component itself */
+    int32_t row = ecs_columns_insert(
+        world, &world->main_stage, table, table->columns[0], entity, record);
+
+    /* Update entity index */
+    record->table = table;
+    record->row = row + 1;
 
     /* Set size and id */
-    EcsComponent *component_data = ecs_vector_first(table->columns[0][1].data);
-    EcsId *id_data = ecs_vector_first(table->columns[0][2].data);
+    EcsComponent *component_data = ecs_vector_first(table->columns[0]->components[0].data);
+    EcsId *id_data = ecs_vector_first(table->columns[0]->components[1].data);
     
     component_data[row].size = size;
     id_data[row] = id;
@@ -500,6 +504,10 @@ int ecs_fini(
     ecs_vector_free(world->tasks);
     ecs_vector_free(world->fini_tasks);
 
+    ecs_vector_free(world->component_data);
+
+    ecs_os_free(world->container_filter_map);
+
     ecs_map_free(world->type_handles);
 
     world->magic = 0;
@@ -614,7 +622,7 @@ void _ecs_dim_type(
 static
 ecs_entity_t ecs_lookup_child_in_columns(
     ecs_type_t type,
-    ecs_column_t *columns,
+    ecs_columns_t *columns,
     ecs_entity_t parent,
     const char *id)
 {
@@ -628,14 +636,14 @@ ecs_entity_t ecs_lookup_child_in_columns(
         return 0;
     }
 
-    ecs_column_t *column = &columns[column_index + 1];
+    ecs_column_t *column = &columns->components[column_index];
     EcsId *buffer = ecs_vector_first(column->data);
     uint32_t i, count = ecs_vector_count(column->data);
     
     for (i = 0; i < count; i ++) {
         if (!strcmp(buffer[i], id)) {
             return *(ecs_entity_t*)ecs_vector_get(
-                columns[0].data, ecs_entity_t, i);
+                columns->entities, ecs_entity_t, i);
         }
     }
 
@@ -657,7 +665,7 @@ ecs_entity_t ecs_lookup_child(
     do {
         for (t = 0; t < count; t ++) {
             ecs_table_t *table = ecs_sparse_get(tables, ecs_table_t, t);
-            ecs_column_t *columns = table->columns[stage_id];
+            ecs_columns_t *columns = table->columns[stage_id];
             if (!columns) {
                 continue;
             }

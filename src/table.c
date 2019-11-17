@@ -86,6 +86,7 @@ void init_table(
     memset(table->columns, 0, sizeof(table->columns));
     table->has_base = 0;
     table->has_parent = 0;
+    table->is_prefab = 0;
     
     init_edges(world, table);
 
@@ -445,15 +446,24 @@ void ecs_init_root_table(
     init_table(world, &world->main_stage.table_root, &entities);
 }
 
-ecs_column_t* ecs_table_get_columns(
+ecs_columns_t* ecs_table_get_columns(
     ecs_world_t *world,
     ecs_stage_t *stage,
     ecs_table_t *table)
 {
-    ecs_column_t *result = table->columns[stage->id];
+    ecs_columns_t *result = table->columns[stage->id];
 
     if (!result) {
         result = table->columns[stage->id] = ecs_columns_new(world, table);
+
+        if (stage != &world->main_stage) {
+            /* If this is not the main stage, keep track of the tables for
+             * which data was created in the stage */
+            ecs_table_t **elem = ecs_vector_add(
+                &stage->dirty_tables, ecs_table_t*);
+
+            *elem = table;
+        }
     }
 
     return result;
@@ -465,9 +475,9 @@ void ecs_table_fini(
 {
     int i;
     for (i = 0; i < ECS_MAX_STAGES; i ++) {
-        ecs_column_t *columns = table->columns[i];
+        ecs_columns_t *columns = table->columns[i];
         if (columns) {
-            ecs_column_free(world, table, columns);
+            ecs_columns_free(world, table, columns);
         }
     }
 
