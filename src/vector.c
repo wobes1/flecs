@@ -301,6 +301,18 @@ uint32_t _ecs_vector_set_count(
     return size;
 }
 
+uint32_t _ecs_vector_set_min_size(
+    ecs_vector_t **vector_inout,
+    size_t elem_size,
+    uint32_t min_size)
+{
+    if (!*vector_inout || (*vector_inout)->size < min_size) {
+        return ecs_vector_set_size(vector_inout, elem_size, min_size);
+    } else {
+        return (*vector_inout)->size;
+    }
+}
+
 void* ecs_vector_first(
     const ecs_vector_t *vector)
 {

@@ -55,12 +55,6 @@
 
 /* -- Builtin component types -- */
 
-/** Metadata of an explicitly created type (ECS_TYPE or ecs_new_type) */
-typedef struct EcsTypeComponent {
-    ecs_type_t type;    /* Preserved nested families */
-    ecs_type_t normalized;  /* Resolved nested families */
-} EcsTypeComponent;
-
 /* For prefabs with child entities, the parent prefab must be marked so that
  * flecs knows not to share components from it, as adding a prefab as a parent
  * is stored in the same way as adding a prefab for sharing components.
@@ -127,6 +121,7 @@ struct ecs_table_t {
     ecs_type_t type;              /* Type containing component ids */
     
     ecs_columns_t *columns[ECS_MAX_STAGES]; /* Data columns per stage */
+    ecs_vector_t *dst_rows;    /* Store dst rows while merging for fast lookups */
 
     ecs_columns_t *child_columns; /* Columns used to store child entities. The
                                    * index in the column is a bitset derived
@@ -370,15 +365,12 @@ typedef struct ecs_thread_t {
 
 /* -- Utility types -- */
 
-/** Supporting type that internal functions pass around to ensure that data
- * related to an entity is only looked up once. */
+/** Supporting type to store looked up or derived entity data */
 typedef struct ecs_entity_info_t {
-    ecs_entity_t entity;        /* Entity identifier */
-    ecs_record_t *record;       /* Record in entity index */
-    ecs_table_t *table;         /* Table of entity */
-    ecs_columns_t *columns;     /* Columns in which entity data is stored */
-    ecs_type_t type;            /* Type of entity */
-    int32_t row;                /* Row in which the entity is stored */
+    ecs_record_t *record;       /* Main stage record in entity index */
+    ecs_table_t *table;         /* Table. Not set if entity is empty */
+    ecs_columns_t *columns;     /* Stage-specific table columns */
+    int32_t row;                /* Actual row (stripped from is_watched bit) */
     bool is_watched;            /* Is entity being watched */
 } ecs_entity_info_t;
 

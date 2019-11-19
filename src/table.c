@@ -84,6 +84,7 @@ void init_table(
 {
     table->type = entities_to_type(entities);
     memset(table->columns, 0, sizeof(table->columns));
+    table->dst_rows = NULL;
     table->has_base = 0;
     table->has_parent = 0;
     table->is_prefab = 0;
@@ -612,10 +613,10 @@ ecs_table_t *ecs_table_find_or_create_intern(
 
                     /* If the original array is ordered and the edge was empty, 
                     * the table does not exist, so create it */
-                    if (stage != &world->main_stage) {
-                        /* If we're in staged mode and we have been searching
+                    if (stage != &world->main_stage && stage != &world->temp_stage) {
+                        /* If we're in threaded mode and we have been searching
                          * the main stage tables, find or create the table in 
-                         * the staging area.
+                         * the thread specific staging area.
                          *
                          * This is expensive, but should rarely happen as 
                          * eventually the main stage will have tables for all of

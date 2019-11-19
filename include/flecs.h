@@ -86,6 +86,12 @@ typedef struct EcsComponent {
     uint32_t size;
 } EcsComponent;
 
+/** Metadata of an explicitly created type (ECS_TYPE or ecs_new_type) */
+typedef struct EcsTypeComponent {
+    ecs_type_t type;        /* Preserved nested types */
+    ecs_type_t normalized;  /* Resolved nested types */
+} EcsTypeComponent;
+
 /** Prefab component */
 typedef struct EcsPrefab {
     ecs_entity_t parent;

@@ -104,9 +104,8 @@ ecs_entity_t ecs_run(
         real_world = ((ecs_thread_t*)world)->world; /* dispel the magic */
     }
 
-    ecs_entity_info_t sys_info = {.entity = system};
-    EcsColSystem *system_data = ecs_get_ptr_intern(real_world, &real_world->main_stage, 
-        &sys_info, EEcsColSystem, false, false);
+    EcsColSystem *system_data = ecs_get_ptr_intern(
+        real_world, &real_world->main_stage, system, EEcsColSystem, false, false);
     assert(system_data != NULL);
 
     if (!system_data->base.enabled) {

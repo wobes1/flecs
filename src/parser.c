@@ -324,15 +324,6 @@ int ecs_new_signature_action(
         elem->op = op;          
         elem->is.component = component;
 
-        if (from == EcsFromEntity) {
-            elem->source = ecs_lookup(world, source_id);
-            if (!elem->source) {
-                ecs_abort(ECS_UNRESOLVED_IDENTIFIER, source_id);
-            }
-
-            ecs_set_watch(world, &world->main_stage, elem->source);
-        }
-
     /* OR columns store a type id instead of a single component */
     } else if (op == EcsOperOr) {
         elem = ecs_vector_last(sig->columns, ecs_signature_column_t);
@@ -356,11 +347,15 @@ int ecs_new_signature_action(
         elem->is.component = component;
         elem->from = from;
         elem->op = op;  
-    } else if (from == EcsFromEntity) {
-        elem = ecs_vector_add(&sig->columns, ecs_signature_column_t);
-        elem->from = from;
+    }
+
+    if (from == EcsFromEntity) {
         elem->source = ecs_lookup(world, source_id);
-        elem->is.component = component;
+        if (!elem->source) {
+            ecs_abort(ECS_UNRESOLVED_IDENTIFIER, source_id);
+        }
+
+        ecs_set_watch(world, &world->main_stage, elem->source);
     }
 
     return 0;

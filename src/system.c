@@ -131,10 +131,8 @@ void ecs_run_row_system(
     uint32_t offset,
     uint32_t limit)
 {
-    ecs_entity_info_t info = {.entity = system};
-
     EcsRowSystem *system_data = ecs_get_ptr_intern(
-        world, &world->main_stage, &info, EEcsRowSystem, false, true);
+        world, &world->main_stage, system, EEcsRowSystem, false, true);
     
     assert(system_data != NULL);
 
@@ -195,12 +193,11 @@ void ecs_run_row_system(
             }
 
             /* Store the reference data so the system callback can access it */
-            info = (ecs_entity_info_t){.entity = entity};
             references[ref_id] = (ecs_reference_t){
                 .entity = entity, 
                 .component = component,
                 .cached_ptr = ecs_get_ptr_intern(world, &world->main_stage, 
-                                &info, component, false, true)
+                                entity, component, false, true)
             };
 
             /* Update the column vector with the entry to the ref vector */

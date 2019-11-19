@@ -35,9 +35,9 @@ ecs_columns_t* ecs_columns_new(
         } else if (e == EEcsId) {
             size = sizeof(EcsId);
         } else {
-            ecs_entity_info_t info = {.entity = buf[i]};
             EcsComponent *component = ecs_get_ptr_intern(
-                world, &world->main_stage, &info, EEcsComponent, false, false);
+                world, &world->main_stage, buf[i], EEcsComponent, 
+                false, false);
             if (component) {
                 size = component->size;
             }
@@ -341,7 +341,7 @@ void ecs_columns_swap(
     }
 }
 
-void ecs_columns_move_back_and_swap(
+void ecs_columns_copy_back_and_swap(
     ecs_world_t *world,
     ecs_stage_t *stage,
     ecs_table_t *table,
@@ -561,7 +561,7 @@ void copy_column(
     }
 }
 
-void ecs_columns_move(
+void ecs_columns_copy(
     ecs_type_t dst_type,
     ecs_columns_t *dst_columns,
     int32_t dst_index,

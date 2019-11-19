@@ -58,7 +58,7 @@ void bootstrap_component(
     size_t size)
 {
     /* Create record for component entity */
-    ecs_record_t *record = ecs_register_entity(world, entity);
+    ecs_record_t *record = ecs_set_entity_in_main(world, entity);
 
     /* Insert row into table to store component itself */
     int32_t row = ecs_columns_insert(

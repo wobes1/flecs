@@ -30,6 +30,7 @@ void New_type() {
 
     ecs_entity_t e = ecs_new(world, Type);
     test_assert(e != 0);
+
     test_assert(ecs_has(world, e, Position));
     
     ecs_fini(world);

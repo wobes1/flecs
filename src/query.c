@@ -244,12 +244,10 @@ void add_table(
                     ref->component = component;
                     
                     if (e != ECS_INVALID_ENTITY) {
-                        ecs_entity_info_t info = {.entity = e};
-
                         ref->cached_ptr = ecs_get_ptr_intern(
                             world, 
                             &world->main_stage,
-                            &info,
+                            e,
                             component,
                             false,
                             true);
@@ -270,7 +268,6 @@ void add_table(
         table_data->components[c] = component;
     }
 }
-
 
 /* Match table with system */
 static

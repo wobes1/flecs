@@ -7,7 +7,7 @@
 
 /* -- Entity API -- */
 
-ecs_record_t* ecs_register_entity(
+ecs_record_t* ecs_set_entity_in_main(
     ecs_world_t *world,
     ecs_entity_t entity);
 
@@ -56,7 +56,7 @@ bool ecs_components_contains_component(
 void* ecs_get_ptr_intern(
     ecs_world_t *world,
     ecs_stage_t *stage,
-    ecs_entity_info_t *info,
+    ecs_entity_t entity,
     ecs_entity_t component,
     bool staged_only,
     bool search_prefab);
@@ -312,7 +312,7 @@ void ecs_columns_swap(
     ecs_record_t *row_ptr_2);
 
 /* Swap n entities with entity preceding them */
-void ecs_columns_move_back_and_swap(
+void ecs_columns_copy_back_and_swap(
     ecs_world_t *world,
     ecs_stage_t *stage,
     ecs_table_t *table,
@@ -326,7 +326,7 @@ void ecs_columns_merge(
     ecs_table_t *old_table);    
 
 /* Move row from one set of columns to (partially) overlapping set of columns */
-void ecs_columns_move(
+void ecs_columns_copy(
     ecs_type_t dst_type,
     ecs_columns_t *dst_columns,
     int32_t dst_index,
