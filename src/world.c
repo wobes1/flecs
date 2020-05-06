@@ -1041,6 +1041,10 @@ ecs_entity_t ecs_lookup(
     if (!strcmp(id, "$")) {
         return EcsSingleton;
     }
+
+    if (isdigit(id[0])) {
+        return atoi(id);
+    }
     
     return ecs_lookup_child(world, 0, id);
 }
