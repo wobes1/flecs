@@ -2379,12 +2379,12 @@ ecs_entity_t ecs_import_from_library(
     const char *module_name,
     int flags);
 
-/** Define module
- */
+/** Define module */
 #define ECS_MODULE(world, id)\
     ECS_COMPONENT(world, id);\
     ecs_set_ptr(world, EcsSingleton, id, NULL);\
     id *handles = (id*)ecs_get_singleton_ptr(world, id);\
+    (void)handles\
 
 /** Wrapper around ecs_import.
  * This macro provides a convenient way to load a module with the world. It can

@@ -69,8 +69,6 @@ void _ecs_parser_error(
     if (msg != msg_buf) {
         ecs_os_free(msg);
     }
-
-    ecs_os_abort();
 }
 
 const char* ecs_strerror(

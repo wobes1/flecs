@@ -895,7 +895,10 @@ EcsTypeComponent type_from_expr(
 {
     if (expr) {
         ecs_vector_t *vec = ecs_vector_new(ecs_entity_t, 1);
-        ecs_parse_expr(world, expr, parse_type_action, id, &vec);
+        if (ecs_parse_expr(world, expr, parse_type_action, id, &vec)) {
+            return (EcsTypeComponent){0, 0};
+        }
+        
         EcsTypeComponent result = type_from_vec(world, vec);
         ecs_vector_free(vec);
         return result;

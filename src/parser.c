@@ -399,7 +399,7 @@ int ecs_parse_expr(
             if (action(world, system_id, sig, ptr - sig, 
                 from_kind, oper_kind, inout_kind, bptr, source_id, ctx)) 
             {
-                ecs_abort(ECS_INVALID_SIGNATURE, sig);
+                return -1;
             }
 
             if (source_id) {
