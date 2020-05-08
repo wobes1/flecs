@@ -32,7 +32,7 @@ void * _ecs_map_get(
     ecs_map_key_t key);
 
 #define ecs_map_get(map, T, key)\
-    (T*)_ecs_map_get(map, sizeof(T), key)
+    (T*)_ecs_map_get(map, sizeof(T), (ecs_map_key_t)key)
 
 FLECS_EXPORT
 bool _ecs_map_has(
@@ -42,7 +42,7 @@ bool _ecs_map_has(
     void *payload);
 
 #define ecs_map_has(map, key, payload)\
-    _ecs_map_has(map, sizeof(*payload), key, payload)
+    _ecs_map_has(map, sizeof(*payload), (ecs_map_key_t)key, payload)
 
 FLECS_EXPORT
 void * _ecs_map_get_ptr(
@@ -50,7 +50,7 @@ void * _ecs_map_get_ptr(
     ecs_map_key_t key);
 
 #define ecs_map_get_ptr(map, T, key)\
-    (T)_ecs_map_get_ptr(map, key)
+    (T)_ecs_map_get_ptr(map, (ecs_map_key_t)key)
 
 FLECS_EXPORT
 void _ecs_map_set(
@@ -60,7 +60,7 @@ void _ecs_map_set(
     const void *payload);
 
 #define ecs_map_set(map, key, payload)\
-    _ecs_map_set(map, sizeof(*payload), key, payload);
+    _ecs_map_set(map, sizeof(*payload), (ecs_map_key_t)key, payload);
 
 FLECS_EXPORT
 void ecs_map_free(
@@ -94,7 +94,7 @@ void* _ecs_map_next(
     ecs_map_key_t *key);
 
 #define ecs_map_next(iter, T, key) \
-    (T*)_ecs_map_next(iter, sizeof(T), key)
+    (T*)_ecs_map_next(iter, sizeof(T), (ecs_map_key_t*)key)
 
 FLECS_EXPORT
 void* _ecs_map_next_ptr(
@@ -102,7 +102,7 @@ void* _ecs_map_next_ptr(
     ecs_map_key_t *key);
 
 #define ecs_map_next_ptr(iter, T, key) \
-    (T)_ecs_map_next_ptr(iter, key)
+    (T)_ecs_map_next_ptr(iter, (ecs_map_key_t*)key)
 
 FLECS_EXPORT
 void ecs_map_grow(

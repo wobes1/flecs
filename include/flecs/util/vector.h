@@ -20,6 +20,15 @@ ecs_vector_t* _ecs_vector_new(
     _ecs_vector_new(sizeof(T), elem_count)
 
 FLECS_EXPORT
+ecs_vector_t* _ecs_vector_from_array(
+    size_t elem_size,
+    int32_t elem_count,
+    void *array);
+
+#define ecs_vector_from_array(elem_count, array)\
+    _ecs_vector_from_array(sizeof(array[0]), elem_count, array)
+
+FLECS_EXPORT
 void ecs_vector_free(
     ecs_vector_t *vector);
 

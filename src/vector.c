@@ -48,6 +48,27 @@ ecs_vector_t* _ecs_vector_new(
     return result;
 }
 
+ecs_vector_t* _ecs_vector_from_array(
+    size_t elem_size,
+    int32_t elem_count,
+    void *array)
+{
+    ecs_assert(elem_size != 0, ECS_INTERNAL_ERROR, NULL);
+    
+    ecs_vector_t *result =
+        ecs_os_malloc(sizeof(ecs_vector_t) + elem_size * elem_count);
+    ecs_assert(result != NULL, ECS_OUT_OF_MEMORY, NULL);
+
+    memcpy(ARRAY_BUFFER(result), array, elem_size * elem_count);
+
+    result->count = elem_count;
+    result->size = elem_count;
+#ifndef NDEBUG
+    result->elem_size = elem_size;
+#endif
+    return result;   
+}
+
 void ecs_vector_free(
     ecs_vector_t *vector)
 {
