@@ -35,7 +35,7 @@ ecs_vector_t* _ecs_vector_new(
     int32_t elem_count)
 {
     ecs_assert(elem_size != 0, ECS_INTERNAL_ERROR, NULL);
-    
+
     ecs_vector_t *result =
         ecs_os_malloc(sizeof(ecs_vector_t) + elem_size * elem_count);
     ecs_assert(result != NULL, ECS_OUT_OF_MEMORY, NULL);
@@ -84,14 +84,14 @@ void ecs_vector_clear(
 }
 
 void* _ecs_vector_addn(
-    ecs_vector_t **array_inout,
+    ecs_vector_t **vector_inout,
     size_t elem_size,
     int32_t elem_count)
 {
-    ecs_vector_t *vector = *array_inout;
+    ecs_vector_t *vector = *vector_inout;
     if (!vector) {
         vector = _ecs_vector_new(elem_size, 1);
-        *array_inout = vector;
+        *vector_inout = vector;
     }
 
     ecs_assert(vector->elem_size == elem_size, ECS_INTERNAL_ERROR, NULL);
@@ -111,7 +111,7 @@ void* _ecs_vector_addn(
 
         vector = resize(vector, max_count * elem_size);
         vector->size = max_count;
-        *array_inout = vector;
+        *vector_inout = vector;
     }
 
     vector->count = new_count;
@@ -120,10 +120,10 @@ void* _ecs_vector_addn(
 }
 
 void* _ecs_vector_add(
-    ecs_vector_t **array_inout,
+    ecs_vector_t **vector_inout,
     size_t elem_size)
 {
-    ecs_vector_t *vector = *array_inout;
+    ecs_vector_t *vector = *vector_inout;
 
     if (vector) {
         ecs_assert(vector->elem_size == elem_size, ECS_INTERNAL_ERROR, NULL);
@@ -135,7 +135,7 @@ void* _ecs_vector_add(
         }
     }
 
-    return _ecs_vector_addn(array_inout, elem_size, 1);
+    return _ecs_vector_addn(vector_inout, elem_size, 1);
 }
 
 int32_t _ecs_vector_move_index(
@@ -245,10 +245,10 @@ int32_t _ecs_vector_remove_index(
 }
 
 void _ecs_vector_reclaim(
-    ecs_vector_t **array_inout,
+    ecs_vector_t **vector_inout,
     size_t elem_size)
 {
-    ecs_vector_t *vector = *array_inout;
+    ecs_vector_t *vector = *vector_inout;
 
     ecs_assert(vector->elem_size == elem_size, ECS_INTERNAL_ERROR, NULL);
     
@@ -259,7 +259,7 @@ void _ecs_vector_reclaim(
         size = count;
         vector = resize(vector, size * elem_size);
         vector->size = size;
-        *array_inout = vector;
+        *vector_inout = vector;
     }
 }
 
@@ -282,14 +282,14 @@ int32_t ecs_vector_size(
 }
 
 int32_t _ecs_vector_set_size(
-    ecs_vector_t **array_inout,
+    ecs_vector_t **vector_inout,
     size_t elem_size,
     int32_t elem_count)
 {
-    ecs_vector_t *vector = *array_inout;
+    ecs_vector_t *vector = *vector_inout;
 
     if (!vector) {
-        *array_inout = _ecs_vector_new(elem_size, elem_count);
+        *vector_inout = _ecs_vector_new(elem_size, elem_count);
         return elem_count;
     } else {
         ecs_assert(vector->elem_size == elem_size, ECS_INTERNAL_ERROR, NULL);
@@ -303,7 +303,7 @@ int32_t _ecs_vector_set_size(
         if (result < elem_count) {
             vector = resize(vector, elem_count * elem_size);
             vector->size = elem_count;
-            *array_inout = vector;
+            *vector_inout = vector;
             result = elem_count;
         }
 
@@ -312,27 +312,27 @@ int32_t _ecs_vector_set_size(
 }
 
 int32_t _ecs_vector_grow(
-    ecs_vector_t **array_inout,
+    ecs_vector_t **vector_inout,
     size_t elem_size,
     int32_t elem_count)
 {
-    int32_t current = ecs_vector_count(*array_inout);
-    return _ecs_vector_set_size(array_inout, elem_size, current + elem_count);
+    int32_t current = ecs_vector_count(*vector_inout);
+    return _ecs_vector_set_size(vector_inout, elem_size, current + elem_count);
 }
 
 int32_t _ecs_vector_set_count(
-    ecs_vector_t **array_inout,
+    ecs_vector_t **vector_inout,
     size_t elem_size,
     int32_t elem_count)
 {
-    if (!*array_inout) {
-        *array_inout = _ecs_vector_new(elem_size, elem_count);
+    if (!*vector_inout) {
+        *vector_inout = _ecs_vector_new(elem_size, elem_count);
     }
 
-    ecs_assert((*array_inout)->elem_size == elem_size, ECS_INTERNAL_ERROR, NULL);
+    ecs_assert((*vector_inout)->elem_size == elem_size, ECS_INTERNAL_ERROR, NULL);
 
-    (*array_inout)->count = elem_count;
-    size_t size = _ecs_vector_set_size(array_inout, elem_size, elem_count);
+    (*vector_inout)->count = elem_count;
+    size_t size = _ecs_vector_set_size(vector_inout, elem_size, elem_count);
     return size;
 }
 
@@ -342,10 +342,25 @@ int32_t _ecs_vector_set_min_size(
     int32_t elem_count)
 {
     if (!*vector_inout || (*vector_inout)->size < elem_count) {
-        return ecs_vector_set_size(vector_inout, elem_size, elem_count);
+        return _ecs_vector_set_size(vector_inout, elem_size, elem_count);
     } else {
         return (*vector_inout)->size;
     }
+}
+
+int32_t _ecs_vector_set_min_count(
+    ecs_vector_t **vector_inout,
+    size_t elem_size,
+    int32_t elem_count)
+{
+    _ecs_vector_set_min_size(vector_inout, elem_size, elem_count);
+
+    ecs_vector_t *v = *vector_inout;
+    if (v && v->count < elem_count) {
+        v->count = elem_count;
+    }
+
+    return v->count;
 }
 
 void* ecs_vector_first(

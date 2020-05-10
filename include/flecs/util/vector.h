@@ -156,6 +156,15 @@ int32_t _ecs_vector_set_min_size(
     _ecs_vector_set_min_size(vector, sizeof(T), size)
 
 FLECS_EXPORT
+int32_t _ecs_vector_set_min_count(
+    ecs_vector_t **vector_inout,
+    size_t elem_size,
+    int32_t elem_count);
+
+#define ecs_vector_set_min_count(vector, T, size) \
+    _ecs_vector_set_min_count(vector, sizeof(T), size)
+
+FLECS_EXPORT
 int32_t ecs_vector_count(
     const ecs_vector_t *vector);
 
