@@ -218,7 +218,7 @@ void ecs_table_register_query(
     int32_t matched_table_index)
 {
     /* Register system with the table */
-    if (query->kind == EcsQueryDefault) {
+    if (!(query->flags & EcsQueryNoActivation)) {
         ecs_query_t **q = ecs_vector_add(&table->queries, ecs_query_t*);
         if (q) *q = query;
 
@@ -226,9 +226,10 @@ void ecs_table_register_query(
         if (data && ecs_vector_count(data->entities)) {
             ecs_table_activate(world, table, query, true);
         }
+    }
 
     /* Register the system as a monitor */
-    } else if (query->kind == EcsQueryMonitor) {
+    if (query->flags & EcsQueryMonitor) {
         register_monitor(world, table, query, matched_table_index);
     }
 }

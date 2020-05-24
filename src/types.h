@@ -156,12 +156,14 @@ typedef struct ecs_table_range_t {
     int32_t count;
 } ecs_table_range_t;
 
-typedef enum ecs_query_kind_t {
-    EcsQueryDefault,        /* Default: query is matched with tables */
-    EcsQueryNoMatching,     /* Query has no columns that need table matching */ 
-    EcsQueryMonitor,        /* Query needs to be registered as a monitor */
-    EcsQueryOnSet           /* Query needs to be registered as on_set system */
-} ecs_query_kind_t;
+#define EcsQueryNeedsTables (1)      /* Query needs matching with tables */ 
+#define EcsQueryMonitor (2)          /* Query needs to be registered as a monitor */
+#define EcsQueryOnSet (4)            /* Query needs to be registered as on_set system */
+#define EcsQueryMatchDisabled (8)    /* Does query match disabled */
+#define EcsQueryMatchPrefab (16)     /* Does query match prefabs */
+#define EcsQueryHasRefs (32)         /* Does query have references */
+
+#define EcsQueryNoActivation (EcsQueryMonitor | EcsQueryOnSet)
 
 /** Query that is automatically matched against active tables */
 struct ecs_query_t {
@@ -173,7 +175,7 @@ struct ecs_query_t {
 
     /* Tables matched with query */
     ecs_vector_t *tables;
-    ecs_vector_t *inactive_tables;
+    ecs_vector_t *empty_tables;
 
     /* Handle to system (optional) */
     ecs_entity_t system;   
@@ -188,13 +190,9 @@ struct ecs_query_t {
     ecs_rank_type_action_t rank_table;
 
     /* The query kind determines how it is registered with tables */
-    ecs_query_kind_t kind;
+    int8_t flags;
 
-    bool match_prefab;          /* Does query match prefabs */
-    bool match_disabled;        /* Does query match disabled */
-    bool has_refs;              /* Does query have references */
     int32_t cascade_by;         /* Identify CASCADE column */
-
     int32_t match_count;        /* How often have tables been (un)matched */
     int32_t prev_match_count;   /* Used to track if sorting is needed */
 };
@@ -223,7 +221,7 @@ typedef struct ecs_on_demand_in_t {
  * when OR expressions or optional expressions are used.
  * 
  * A column system keeps track of tables that are empty. These tables are stored
- * in the 'inactive_tables' array. This prevents the system from iterating over
+ * in the 'empty_tables' array. This prevents the system from iterating over
  * tables in the main loop that have no data.
  * 
  * For each table, a column system stores an index that translates between the
